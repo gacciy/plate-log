@@ -298,6 +298,74 @@
     margin-bottom:14px;
     color:var(--text);
   }
+
+  /* today's target chip */
+  .target-chip{
+    background:rgba(232,178,61,0.08);
+    border:1px solid rgba(232,178,61,0.35);
+    border-radius:12px;
+    padding:10px 12px;
+    margin-bottom:14px;
+  }
+  .target-chip .target-label{
+    font-family:'Oswald',sans-serif;
+    font-size:11px;
+    letter-spacing:0.1em;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .target-chip .target-body{
+    font-size:13px;
+    color:var(--text-muted);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+  .target-chip .target-body .mono{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    color:var(--text);
+  }
+  .target-chip .target-body .mono.gold{color:var(--gold);}
+  .target-chip .target-controls{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .target-chip .target-pills{
+    display:flex;
+    gap:6px;
+  }
+  .target-chip .target-pill{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:700;
+    padding:5px 10px;
+    border-radius:20px;
+  }
+  .target-chip .target-pill.active{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#18170F;
+  }
+  .target-chip .target-apply{
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold);
+    font-size:12px;
+    font-weight:700;
+    padding:6px 14px;
+    border-radius:20px;
+  }
+
   .stepper-row{
     display:flex;
     gap:14px;
@@ -553,6 +621,38 @@
   #toast button{
     background:none;border:none;color:var(--gold);font-weight:700;font-size:13px;
   }
+  #toast.pr{
+    border-color:var(--gold);
+    align-items:flex-start;
+  }
+  .toast-pr-icon{
+    color:var(--gold);
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    padding-top:2px;
+  }
+  .toast-pr-body{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .toast-pr-head{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--gold);
+    letter-spacing:0.02em;
+  }
+  .toast-pr-main{
+    font-size:13px;
+    color:var(--text);
+  }
+  .toast-pr-sub{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--text-muted);
+  }
 
   /* bottom nav */
   nav.tabbar{
@@ -646,7 +746,8 @@
     showAddExercise: false,
     editExercises: false,
     draft: {weight:20, reps:10},
-    graphBodyPart: 'chest'
+    graphBodyPart: 'chest',
+    targetMode: 'weight' // 'weight' = +2.5kg suggestion, 'reps' = +1回 suggestion
   };
   let lastDeleted = null; // for undo
 
@@ -711,21 +812,80 @@
     }catch(e){ console.error('save failed', e); }
   }
 
-  function showToast(msg, onUndo){
+  // toast queue: avoids overlapping simultaneous toasts (e.g. a PR toast and a delete-undo toast)
+  let toastQueue = [];
+  let toastActive = false;
+
+  function queueToast(build, duration){
+    toastQueue.push({build, duration});
+    processToastQueue();
+  }
+  function processToastQueue(){
+    if(toastActive || !toastQueue.length) return;
+    const item = toastQueue.shift();
+    toastActive = true;
     const t = document.getElementById('toast');
-    t.innerHTML = '';
-    const span = document.createElement('span');
-    span.textContent = msg;
-    t.appendChild(span);
-    if(onUndo){
-      const btn = document.createElement('button');
-      btn.textContent = '元に戻す';
-      btn.onclick = ()=>{ onUndo(); t.classList.remove('show'); };
-      t.appendChild(btn);
-    }
+    t.className = '';
+    item.build(t);
     t.classList.add('show');
     clearTimeout(t._timer);
-    t._timer = setTimeout(()=> t.classList.remove('show'), 4000);
+    t._timer = setTimeout(hideToastNow, item.duration);
+  }
+  function hideToastNow(){
+    const t = document.getElementById('toast');
+    clearTimeout(t._timer);
+    t.classList.remove('show');
+    toastActive = false;
+    setTimeout(processToastQueue, 220); // wait for fade-out transition before showing next
+  }
+
+  function showToast(msg, onUndo){
+    queueToast((t)=>{
+      const span = document.createElement('span');
+      span.textContent = msg;
+      t.appendChild(span);
+      if(onUndo){
+        const btn = document.createElement('button');
+        btn.textContent = '元に戻す';
+        btn.onclick = ()=>{ onUndo(); hideToastNow(); };
+        t.appendChild(btn);
+      }
+    }, 4000);
+  }
+
+  const TROPHY_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4M17 5h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"/></svg>';
+
+  function showPRToast(exercise, weight, reps, prInfo){
+    queueToast((t)=>{
+      t.classList.add('pr');
+      const icon = document.createElement('span');
+      icon.className = 'toast-pr-icon';
+      icon.innerHTML = TROPHY_SVG;
+      const body = document.createElement('div');
+      body.className = 'toast-pr-body';
+      const head = document.createElement('div');
+      head.className = 'toast-pr-head';
+      head.textContent = '自己ベスト更新';
+      const main = document.createElement('div');
+      main.className = 'toast-pr-main';
+      main.textContent = `${exercise} ${weight}kg×${reps}回`;
+      body.appendChild(head);
+      body.appendChild(main);
+      if(prInfo.weightPR){
+        const p = document.createElement('div');
+        p.className = 'toast-pr-sub';
+        p.textContent = `自己ベスト ${prInfo.weightPR.prev}kg → ${prInfo.weightPR.now}kg`;
+        body.appendChild(p);
+      }
+      if(prInfo.rmPR){
+        const p = document.createElement('div');
+        p.className = 'toast-pr-sub';
+        p.textContent = `推定1RM ${prInfo.rmPR.prev}kg → ${prInfo.rmPR.now}kg`;
+        body.appendChild(p);
+      }
+      t.appendChild(icon);
+      t.appendChild(body);
+    }, 5500);
   }
 
   // ---------- RECORD TAB ----------
@@ -757,6 +917,42 @@
   }
   function draftFor(bodyPartKey, exercise){
     return isCardio(bodyPartKey) ? lastUsedCardio(exercise) : lastUsedWeightReps(exercise);
+  }
+
+  // 機能A: 今日のターゲット提案 - suggest a target based on the last set of the most recent prior session
+  function targetSuggestion(bodyPart, exercise, beforeDate){
+    const prior = state.sessions.filter(s=>s.bodyPart===bodyPart && s.exercise===exercise && s.date<beforeDate && s.sets.length>0)
+      .sort((a,b)=> a.date<b.date?1:-1);
+    if(!prior.length) return null;
+    const baseSet = prior[0].sets[prior[0].sets.length-1];
+    return {
+      baseWeight: baseSet.weight,
+      baseReps: baseSet.reps,
+      weightUp: {weight: baseSet.weight+2.5, reps: baseSet.reps},
+      repsUp: {weight: baseSet.weight, reps: baseSet.reps+1}
+    };
+  }
+
+  // 機能B: 自己ベスト検出 - compare a new set against all prior sets of the same exercise
+  function estimated1RM(weight, reps){
+    return weight * (1 + reps/30);
+  }
+  function computeSetPR(bodyPart, exercise, date, newSet){
+    const priorSets = [];
+    state.sessions.forEach(s=>{
+      if(s.bodyPart!==bodyPart || s.exercise!==exercise) return;
+      if(s.date<=date) priorSets.push(...s.sets);
+    });
+    if(!priorSets.length) return null;
+    const maxWeight = Math.max(...priorSets.map(st=>st.weight));
+    const max1RM = Math.max(...priorSets.map(st=>estimated1RM(st.weight, st.reps)));
+    const newWeight = newSet.weight;
+    const new1RM = estimated1RM(newSet.weight, newSet.reps);
+    const result = {};
+    if(newWeight>maxWeight) result.weightPR = {prev: maxWeight, now: newWeight};
+    if(new1RM>max1RM) result.rmPR = {prev: round1(max1RM), now: round1(new1RM)};
+    if(!result.weightPR && !result.rmPR) return null;
+    return result;
   }
 
   function renderRecord(){
@@ -870,6 +1066,7 @@
           ui.exercise = name;
           ui.draft = draftFor(ui.bodyPart, name);
           ui.showAddExercise = false;
+          ui.targetMode = 'weight';
           render();
         };
         grid.appendChild(b);
@@ -898,6 +1095,7 @@
             ui.exercise = val;
             ui.draft = draftFor(ui.bodyPart, val);
             ui.showAddExercise = false;
+            ui.targetMode = 'weight';
             saveData();
             render();
           }
@@ -918,6 +1116,40 @@
       card.appendChild(exNameDiv);
 
       const cardio = isCardio(ui.bodyPart);
+
+      // 機能A: 今日のターゲット提案 - only before any set is recorded today, and not for cardio
+      if(!cardio && (!session || session.sets.length===0)){
+        const suggestion = targetSuggestion(ui.bodyPart, ui.exercise, ui.date);
+        if(suggestion){
+          const active = ui.targetMode==='reps' ? suggestion.repsUp : suggestion.weightUp;
+          const chip = document.createElement('div');
+          chip.className = 'target-chip';
+          chip.innerHTML = `
+            <div class="target-label">TODAY'S TARGET</div>
+            <div class="target-body">
+              <span>前回 <span class="mono">${suggestion.baseWeight}kg×${suggestion.baseReps}回</span></span>
+              <span>→</span>
+              <span class="mono gold">${active.weight}kg×${active.reps}回</span>
+            </div>
+            <div class="target-controls">
+              <div class="target-pills">
+                <button class="target-pill${ui.targetMode==='weight'?' active':''}" data-target-mode="weight">+2.5kg</button>
+                <button class="target-pill${ui.targetMode==='reps'?' active':''}" data-target-mode="reps">+1回</button>
+              </div>
+              <button class="target-apply" data-act="target-apply">適用</button>
+            </div>
+          `;
+          chip.querySelectorAll('[data-target-mode]').forEach(btn=>{
+            btn.onclick = ()=>{ ui.targetMode = btn.dataset.targetMode; render(); };
+          });
+          chip.querySelector('[data-act="target-apply"]').onclick = ()=>{
+            ui.draft = {weight: active.weight, reps: active.reps};
+            render();
+          };
+          card.appendChild(chip);
+        }
+      }
+
       const stepperRow = document.createElement('div');
       stepperRow.className='stepper-row';
       stepperRow.innerHTML = cardio ? `
@@ -970,8 +1202,10 @@
         }else{
           const w = parseFloat(document.getElementById('weight-input').value)||0;
           const r = parseInt(document.getElementById('reps-input').value)||0;
+          const pr = computeSetPR(ui.bodyPart, ui.exercise, ui.date, {weight:w, reps:r});
           s.sets.push({weight:w, reps:r});
           ui.draft = {weight:w, reps:r};
+          if(pr) showPRToast(ui.exercise, w, r, pr);
         }
         saveData();
         render();
