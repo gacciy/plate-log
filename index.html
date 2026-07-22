@@ -366,6 +366,72 @@
     border-radius:20px;
   }
 
+  /* cardio voice input */
+  .voice-wrap{margin-bottom:14px;}
+  .voice-mic-btn{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:12px;
+    border-radius:12px;
+    font-size:14px;
+    font-weight:600;
+  }
+  .voice-dictation-input{
+    position:absolute;
+    width:1px;
+    height:1px;
+    padding:0;
+    margin:-1px;
+    border:0;
+    opacity:0;
+    overflow:hidden;
+  }
+  .voice-status:not(:empty){margin-top:10px;}
+  .voice-confirm{
+    background:rgba(232,178,61,0.08);
+    border:1px solid rgba(232,178,61,0.35);
+    border-radius:12px;
+    padding:12px;
+  }
+  .voice-confirm-msg{
+    font-size:13px;
+    color:var(--text);
+    line-height:1.5;
+    margin-bottom:10px;
+  }
+  .voice-confirm-actions{
+    display:flex;
+    gap:8px;
+  }
+  .voice-confirm-actions button{
+    flex:1;
+    padding:10px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:13px;
+  }
+  .voice-confirm-save{
+    background:var(--gold);
+    color:#18170F;
+    border:none;
+  }
+  .voice-confirm-edit{
+    background:none;
+    border:1px solid var(--border);
+    color:var(--text);
+  }
+  .voice-error{
+    background:rgba(209,82,79,0.1);
+    border:1px solid rgba(209,82,79,0.35);
+    color:var(--text-muted);
+    border-radius:12px;
+    padding:10px 12px;
+    font-size:13px;
+    line-height:1.5;
+  }
+
   .stepper-row{
     display:flex;
     gap:14px;
@@ -1065,6 +1131,20 @@
     return isCardio(bodyPartKey) ? lastUsedCardio(exercise) : lastUsedWeightReps(exercise);
   }
 
+  // 有酸素の音声入力: 発話は「距離→カロリー」の順を前提にパースする
+  function parseVoiceCardio(text){
+    if(!text) return null;
+    const calMatch = text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:キロカロリー|カロリー|kcal)/i);
+    if(!calMatch) return null;
+    const withoutCal = text.slice(0, calMatch.index) + text.slice(calMatch.index + calMatch[0].length);
+    const distMatch = withoutCal.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:キロメートル|キロ|km)/i);
+    if(!distMatch) return null;
+    const calories = parseFloat(calMatch[1]);
+    const distance = parseFloat(distMatch[1]);
+    if(isNaN(calories) || isNaN(distance)) return null;
+    return {distance: round1(distance), calories: Math.round(calories)};
+  }
+
   // 機能A: 今日のターゲット提案 - suggest a target based on the last set of the most recent prior session
   function targetSuggestion(bodyPart, exercise, beforeDate){
     const prior = state.sessions.filter(s=>s.bodyPart===bodyPart && s.exercise===exercise && s.date<beforeDate && s.sets.length>0)
@@ -1294,6 +1374,85 @@
           };
           card.appendChild(chip);
         }
+      }
+
+      // 有酸素の音声入力記録: iOS標準キーボードのディクテーションを使う
+      // (render()を呼ぶとカード全体が再構築されキーボードが閉じてしまうため、
+      //  入力欄が focus されている間は render() を呼ばず、この場でDOMを直接更新する)
+      if(cardio){
+        const voiceWrap = document.createElement('div');
+        voiceWrap.className = 'voice-wrap';
+
+        const micBtn = document.createElement('button');
+        micBtn.type = 'button';
+        micBtn.className = 'voice-mic-btn';
+        micBtn.textContent = '🎤 音声で記録';
+        voiceWrap.appendChild(micBtn);
+
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'text';
+        hiddenInput.className = 'voice-dictation-input';
+        hiddenInput.autocomplete = 'off';
+        hiddenInput.autocapitalize = 'off';
+        hiddenInput.spellcheck = false;
+        voiceWrap.appendChild(hiddenInput);
+
+        const voiceStatus = document.createElement('div');
+        voiceStatus.className = 'voice-status';
+        voiceWrap.appendChild(voiceStatus);
+
+        card.appendChild(voiceWrap);
+
+        micBtn.onclick = ()=>{ hiddenInput.focus(); };
+
+        function renderVoiceConfirm(result){
+          voiceStatus.innerHTML = '';
+          const box = document.createElement('div');
+          box.className = 'voice-confirm';
+          const msg = document.createElement('div');
+          msg.className = 'voice-confirm-msg';
+          msg.textContent = `距離 ${result.distance}km / カロリー ${result.calories}kcalで記録しますか?`;
+          box.appendChild(msg);
+          const actions = document.createElement('div');
+          actions.className = 'voice-confirm-actions';
+          const saveBtn = document.createElement('button');
+          saveBtn.className = 'voice-confirm-save';
+          saveBtn.textContent = '保存';
+          saveBtn.onclick = ()=>{
+            const s = findOrCreateSession(ui.date, ui.bodyPart, ui.exercise);
+            s.sets.push({distance: result.distance, calories: result.calories});
+            ui.draft = {distance: result.distance, calories: result.calories};
+            saveData();
+            render();
+          };
+          const editBtn = document.createElement('button');
+          editBtn.className = 'voice-confirm-edit';
+          editBtn.textContent = '修正';
+          editBtn.onclick = ()=>{
+            ui.draft = {distance: result.distance, calories: result.calories};
+            render();
+          };
+          actions.appendChild(saveBtn);
+          actions.appendChild(editBtn);
+          box.appendChild(actions);
+          voiceStatus.appendChild(box);
+        }
+        function renderVoiceError(){
+          voiceStatus.innerHTML = '';
+          const err = document.createElement('div');
+          err.className = 'voice-error';
+          err.textContent = '聞き取れませんでした。もう一度お試しいただくか、手入力してください。';
+          voiceStatus.appendChild(err);
+        }
+
+        hiddenInput.addEventListener('input', ()=>{
+          const result = parseVoiceCardio(hiddenInput.value);
+          if(result) renderVoiceConfirm(result);
+          else voiceStatus.innerHTML = '';
+        });
+        hiddenInput.addEventListener('blur', ()=>{
+          if(hiddenInput.value.trim() && !parseVoiceCardio(hiddenInput.value)) renderVoiceError();
+        });
       }
 
       const stepperRow = document.createElement('div');
