@@ -333,28 +333,9 @@
   .target-chip .target-controls{
     display:flex;
     align-items:center;
-    justify-content:space-between;
+    justify-content:flex-end;
     gap:8px;
     flex-wrap:wrap;
-  }
-  .target-chip .target-pills{
-    display:flex;
-    gap:6px;
-  }
-  .target-chip .target-pill{
-    background:var(--surface-2);
-    border:1px solid var(--border);
-    color:var(--text-muted);
-    font-family:'JetBrains Mono',monospace;
-    font-size:12px;
-    font-weight:700;
-    padding:5px 10px;
-    border-radius:20px;
-  }
-  .target-chip .target-pill.active{
-    background:var(--gold);
-    border-color:var(--gold);
-    color:#18170F;
   }
   .target-chip .target-apply{
     background:none;
@@ -439,10 +420,11 @@
   }
   .stepper{
     flex:1;
+    min-width:0;
     background:var(--surface-2);
     border:1px solid var(--border);
     border-radius:12px;
-    padding:8px 10px;
+    padding:8px 8px;
     text-align:center;
   }
   .stepper .label{
@@ -455,19 +437,23 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
+    gap:4px;
     margin-top:4px;
   }
   .stepper button{
+    flex:0 0 auto;
     background:var(--border);
     color:var(--text);
     border:none;
-    width:34px;height:34px;
-    border-radius:9px;
-    font-size:18px;
+    width:26px;height:26px;
+    border-radius:7px;
+    font-size:15px;
     font-weight:700;
   }
   .stepper input{
-    width:64px;
+    flex:1;
+    min-width:0;
+    width:auto;
     background:transparent;
     border:none;
     color:var(--gold);
@@ -689,6 +675,7 @@
     display:flex;
     flex-direction:column;
     gap:10px;
+    margin-bottom:22px;
   }
   .mini-card{
     background:var(--surface);
@@ -700,6 +687,7 @@
     gap:10px;
   }
   .mini-card.tappable{cursor:pointer;}
+  .mini-card.active{border-color:var(--gold);}
   .mini-card-main{flex:1; min-width:0;}
   .mini-card-top{
     display:flex;
@@ -781,19 +769,6 @@
     display:flex;align-items:center;justify-content:center;
   }
   .mini-card-reorder button:disabled{opacity:0.3;}
-
-  /* graph detail back link */
-  .graph-back-btn{
-    background:none;
-    border:none;
-    color:var(--text-muted);
-    font-size:13px;
-    font-weight:600;
-    padding:4px 0 12px;
-    display:flex;
-    align-items:center;
-    gap:4px;
-  }
 
   /* toast */
   #toast{
@@ -947,9 +922,7 @@
     editExercises: false,
     draft: {weight:20, reps:10},
     graphBodyPart: 'chest',
-    graphView: 'overview', // 'overview' | 'detail'
-    reorderMode: false,
-    targetMode: 'weight' // 'weight' = +2.5kg suggestion, 'reps' = +1回 suggestion
+    reorderMode: false
   };
   let lastDeleted = null; // for undo
 
@@ -1145,17 +1118,16 @@
     return {distance: round1(distance), calories: Math.round(calories)};
   }
 
-  // 機能A: 今日のターゲット提案 - suggest a target based on the last set of the most recent prior session
+  // 機能A: 今日のターゲット提案 - show the max weight and max reps from the most recent prior session
+  // (these can come from different sets, e.g. set1=80kg×8回, set2=75kg×10回 → 80kg / 10回)
   function targetSuggestion(bodyPart, exercise, beforeDate){
     const prior = state.sessions.filter(s=>s.bodyPart===bodyPart && s.exercise===exercise && s.date<beforeDate && s.sets.length>0)
       .sort((a,b)=> a.date<b.date?1:-1);
     if(!prior.length) return null;
-    const baseSet = prior[0].sets[prior[0].sets.length-1];
+    const sets = prior[0].sets;
     return {
-      baseWeight: baseSet.weight,
-      baseReps: baseSet.reps,
-      weightUp: {weight: baseSet.weight+2.5, reps: baseSet.reps},
-      repsUp: {weight: baseSet.weight, reps: baseSet.reps+1}
+      maxWeight: Math.max(...sets.map(st=>st.weight)),
+      maxReps: Math.max(...sets.map(st=>st.reps))
     };
   }
 
@@ -1185,6 +1157,9 @@
     const m = document.getElementById('main');
     const el = document.createElement('div');
 
+    // body part overview: today's rolling 7-day totals per body part (updates daily, tap to select)
+    el.appendChild(buildBodyPartOverview());
+
     // date row
     const dateRow = document.createElement('div');
     dateRow.className = 'date-row';
@@ -1198,22 +1173,6 @@
       <button class="arrow" data-act="next-day">›</button>
     `;
     el.appendChild(dateRow);
-
-    // body part chips
-    const bpTitle = document.createElement('h2');
-    bpTitle.className='section-title'; bpTitle.textContent='部位を選択';
-    el.appendChild(bpTitle);
-    const chipRow = document.createElement('div');
-    chipRow.className='chip-row';
-    BODY_PARTS.forEach(b=>{
-      const chip = document.createElement('button');
-      chip.className = 'chip' + (ui.bodyPart===b.key ? ' active':'');
-      chip.style.background = ui.bodyPart===b.key ? b.hex : '';
-      chip.innerHTML = `<span class="dot" style="background:${b.hex}"></span>${b.label}`;
-      chip.onclick = ()=>{ ui.bodyPart=b.key; ui.exercise=null; ui.showAddExercise=false; ui.editExercises=false; render(); };
-      chipRow.appendChild(chip);
-    });
-    el.appendChild(chipRow);
 
     // exercise grid
     const exTitleRow = document.createElement('div');
@@ -1292,7 +1251,6 @@
           ui.exercise = name;
           ui.draft = draftFor(ui.bodyPart, name);
           ui.showAddExercise = false;
-          ui.targetMode = 'weight';
           render();
         };
         grid.appendChild(b);
@@ -1321,7 +1279,6 @@
             ui.exercise = val;
             ui.draft = draftFor(ui.bodyPart, val);
             ui.showAddExercise = false;
-            ui.targetMode = 'weight';
             saveData();
             render();
           }
@@ -1347,29 +1304,21 @@
       if(!cardio && (!session || session.sets.length===0)){
         const suggestion = targetSuggestion(ui.bodyPart, ui.exercise, ui.date);
         if(suggestion){
-          const active = ui.targetMode==='reps' ? suggestion.repsUp : suggestion.weightUp;
           const chip = document.createElement('div');
           chip.className = 'target-chip';
           chip.innerHTML = `
             <div class="target-label">TODAY'S TARGET</div>
             <div class="target-body">
-              <span>前回 <span class="mono">${suggestion.baseWeight}kg×${suggestion.baseReps}回</span></span>
-              <span>→</span>
-              <span class="mono gold">${active.weight}kg×${active.reps}回</span>
+              <span>前回記録の最高重量 <span class="mono gold">${suggestion.maxWeight}kg</span></span>
+              <span>・</span>
+              <span>最高回数 <span class="mono gold">${suggestion.maxReps}回</span></span>
             </div>
             <div class="target-controls">
-              <div class="target-pills">
-                <button class="target-pill${ui.targetMode==='weight'?' active':''}" data-target-mode="weight">+2.5kg</button>
-                <button class="target-pill${ui.targetMode==='reps'?' active':''}" data-target-mode="reps">+1回</button>
-              </div>
               <button class="target-apply" data-act="target-apply">適用</button>
             </div>
           `;
-          chip.querySelectorAll('[data-target-mode]').forEach(btn=>{
-            btn.onclick = ()=>{ ui.targetMode = btn.dataset.targetMode; render(); };
-          });
           chip.querySelector('[data-act="target-apply"]').onclick = ()=>{
-            ui.draft = {weight: active.weight, reps: active.reps};
+            ui.draft = {weight: suggestion.maxWeight, reps: suggestion.maxReps};
             render();
           };
           card.appendChild(chip);
@@ -1581,6 +1530,7 @@
 
     m.innerHTML='';
     m.appendChild(el);
+    mountOverviewSparklines();
 
     // wire up controls
     document.getElementById('date-input').addEventListener('change', (e)=>{
@@ -1713,6 +1663,44 @@
     });
   }
 
+  // daily-filled variants for the top-of-record overview: unlike rollingSeries/rollingSeriesDual
+  // (which only plot dates that actually have a session), these plot every calendar day from the
+  // body part's first recorded date through today, so the rolling 7-day total updates even on
+  // days with no training (shown as that day's own contribution being 0).
+  function rollingSeriesDailyAll(bodyPart){
+    const recDates = state.sessions.filter(s=>s.bodyPart===bodyPart).map(s=>s.date);
+    if(!recDates.length) return [];
+    const minDate = recDates.reduce((a,b)=> a<b?a:b);
+    const maxRecordDate = recDates.reduce((a,b)=> a>b?a:b);
+    const today = toISO(new Date());
+    const end = maxRecordDate>today ? maxRecordDate : today;
+    const result = [];
+    for(let d=minDate; d<=end; d=addDays(d,1)){
+      const start = addDays(d,-6);
+      const vol = state.sessions.filter(s=> s.bodyPart===bodyPart && s.date>=start && s.date<=d)
+        .reduce((a,s)=>a+sessionVolume(s),0);
+      result.push({date:d, vol});
+    }
+    return result;
+  }
+  function rollingSeriesDualDailyAll(bodyPart){
+    const recDates = state.sessions.filter(s=>s.bodyPart===bodyPart).map(s=>s.date);
+    if(!recDates.length) return [];
+    const minDate = recDates.reduce((a,b)=> a<b?a:b);
+    const maxRecordDate = recDates.reduce((a,b)=> a>b?a:b);
+    const today = toISO(new Date());
+    const end = maxRecordDate>today ? maxRecordDate : today;
+    const result = [];
+    for(let d=minDate; d<=end; d=addDays(d,1)){
+      const start = addDays(d,-6);
+      const inRange = state.sessions.filter(s=> s.bodyPart===bodyPart && s.date>=start && s.date<=d);
+      const km = round1(inRange.reduce((a,s)=>a+sessionDistance(s),0));
+      const kcal = Math.round(inRange.reduce((a,s)=>a+sessionCalories(s),0));
+      result.push({date:d, km, kcal});
+    }
+    return result;
+  }
+
   function buildDualLineChartSVG(series, colorA, colorB, opts={}){
     // series: [{date, a, b}] - each metric normalized to its own scale so the two lines share one plot area
     const mini = !!opts.mini;
@@ -1827,6 +1815,15 @@
     const prev = series.length>1 ? series[series.length-2] : null;
     return {cardio, series, empty:false, last, prev};
   }
+  // same shape as bodyPartSummary, but backed by the daily-filled series (used by the record-tab overview)
+  function bodyPartSummaryOverview(bodyPart){
+    const cardio = isCardio(bodyPart);
+    const series = cardio ? rollingSeriesDualDailyAll(bodyPart) : rollingSeriesDailyAll(bodyPart);
+    if(!series.length) return {cardio, series, empty:true};
+    const last = series[series.length-1];
+    const prev = series.length>1 ? series[series.length-2] : null;
+    return {cardio, series, empty:false, last, prev};
+  }
   function deltaBadgeHtml(diff, unit, mini){
     const cls = diff>0?'up':diff<0?'down':'flat';
     const sign = diff>0?'▲':diff<0?'▼':'―';
@@ -1836,12 +1833,6 @@
   function renderGraphDetail(){
     const m = document.getElementById('main');
     const el = document.createElement('div');
-
-    const backBtn = document.createElement('button');
-    backBtn.className = 'graph-back-btn';
-    backBtn.textContent = '‹ 概要';
-    backBtn.onclick = ()=>{ ui.graphView = 'overview'; render(); };
-    el.appendChild(backBtn);
 
     const bpTitle = document.createElement('h2');
     bpTitle.className='section-title'; bpTitle.textContent='部位を選択';
@@ -1957,16 +1948,18 @@
     });
   }
 
-  // ---------- GRAPH TAB: OVERVIEW ----------
-  function renderGraphOverview(){
-    const m = document.getElementById('main');
+  // ---------- RECORD TAB: BODY PART OVERVIEW ----------
+  // Sits at the top of the record tab. Doubles as the body-part selector (tap a card to switch
+  // ui.bodyPart) and as a daily-updating "how am I trending this week" glance, using the
+  // daily-filled series so today's rolling total always shows even before you've trained today.
+  function buildBodyPartOverview(){
     const el = document.createElement('div');
 
     const header = document.createElement('div');
     header.className = 'graph-overview-header';
     const title = document.createElement('h2');
     title.className = 'section-title';
-    title.textContent = '概要';
+    title.textContent = '部位を選択';
     const reorderBtn = document.createElement('button');
     reorderBtn.className = 'reorder-toggle' + (ui.reorderMode ? ' active' : '');
     reorderBtn.textContent = ui.reorderMode ? '完了' : '並び替え';
@@ -1981,10 +1974,11 @@
     state.bodyPartOrder.forEach((key, idx)=>{
       const b = bp(key);
       if(!b) return;
-      const summary = bodyPartSummary(key);
+      const summary = bodyPartSummaryOverview(key);
 
       const card = document.createElement('div');
-      card.className = 'mini-card' + (!ui.reorderMode ? ' tappable' : '');
+      const isActive = !ui.reorderMode && ui.bodyPart===key;
+      card.className = 'mini-card' + (!ui.reorderMode ? ' tappable' : '') + (isActive ? ' active' : '');
 
       const main = document.createElement('div');
       main.className = 'mini-card-main';
@@ -2054,8 +2048,10 @@
         card.appendChild(reorderCtrl);
       }else{
         card.onclick = ()=>{
-          ui.graphBodyPart = key;
-          ui.graphView = 'detail';
+          ui.bodyPart = key;
+          ui.exercise = null;
+          ui.showAddExercise = false;
+          ui.editExercises = false;
           render();
         };
       }
@@ -2064,12 +2060,13 @@
     });
 
     el.appendChild(list);
-    m.innerHTML = '';
-    m.appendChild(el);
+    return el;
+  }
 
-    // sparklines are mounted after the cards exist in the DOM
+  // sparklines must be mounted after buildBodyPartOverview()'s DOM is attached to the page
+  function mountOverviewSparklines(){
     state.bodyPartOrder.forEach(key=>{
-      const summary = bodyPartSummary(key);
+      const summary = bodyPartSummaryOverview(key);
       if(summary.empty) return;
       const holder = document.getElementById(`spark-${key}`);
       if(!holder) return;
@@ -2091,17 +2088,12 @@
     });
     if(ui.tab==='record') renderRecord();
     else if(ui.tab==='history') renderHistory();
-    else if(ui.tab==='graph'){
-      if(ui.graphView==='detail') renderGraphDetail();
-      else renderGraphOverview();
-    }
+    else if(ui.tab==='graph') renderGraphDetail();
   }
 
   document.querySelectorAll('nav.tabbar button').forEach(b=>{
     b.addEventListener('click', ()=>{
-      const enteringGraph = b.dataset.tab==='graph';
       ui.tab = b.dataset.tab;
-      if(enteringGraph){ ui.graphView = 'overview'; ui.reorderMode = false; }
       render();
     });
   });
