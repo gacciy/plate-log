@@ -619,6 +619,7 @@
   .score-delta.down{color:var(--danger); background:rgba(209,82,79,0.12);}
   .score-delta.flat{color:var(--text-muted); background:var(--surface-2);}
   .score-delta.pr{color:var(--gold); background:rgba(232,178,61,0.15);}
+  .score-delta.pr .pr-amount{color:var(--text); font-weight:800;}
   .chart-wrap{margin-top:16px; height:220px;}
   .chart-legend{
     display:flex;
@@ -1874,7 +1875,7 @@
   }
   // gap<=0 means today's rolling total already matches/beats the historical best (mini-card badge)
   function prBadgeHtml(gap, unit){
-    if(gap<=0) return `<span class="score-delta pr mini">自己ベスト更新中</span>`;
+    if(gap<=0) return `<span class="score-delta pr mini">BEST <span class="pr-amount">${-gap}${unit}</span>更新中</span>`;
     return `<span class="score-delta flat mini">あと${gap}${unit}</span>`;
   }
 
