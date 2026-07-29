@@ -618,6 +618,7 @@
   .score-delta.up{color:var(--arms); background:rgba(111,191,115,0.12);}
   .score-delta.down{color:var(--danger); background:rgba(209,82,79,0.12);}
   .score-delta.flat{color:var(--text-muted); background:var(--surface-2);}
+  .score-delta.pr{color:var(--gold); background:rgba(232,178,61,0.15);}
   .chart-wrap{margin-top:16px; height:220px;}
   .chart-legend{
     display:flex;
@@ -770,6 +771,19 @@
   }
   .mini-card-reorder button:disabled{opacity:0.3;}
 
+  /* record/graph detail back link */
+  .page-back-btn{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-size:13px;
+    font-weight:600;
+    padding:4px 0 12px;
+    display:flex;
+    align-items:center;
+    gap:4px;
+  }
+
   /* toast */
   #toast{
     position:fixed;
@@ -915,6 +929,7 @@
   };
   let ui = {
     tab: 'record',
+    recordView: 'overview', // 'overview' (body-part picker) | 'detail' (date + exercise + set entry)
     date: toISO(new Date()),
     bodyPart: 'chest',
     exercise: null,
@@ -1154,11 +1169,29 @@
   }
 
   function renderRecord(){
+    if(ui.recordView==='detail') renderRecordDetail();
+    else renderRecordOverview();
+  }
+
+  // page 1: body-part overview (today's rolling 7-day totals). Tap a card to open page 2.
+  function renderRecordOverview(){
+    const m = document.getElementById('main');
+    const el = buildBodyPartOverview();
+    m.innerHTML = '';
+    m.appendChild(el);
+    mountOverviewSparklines();
+  }
+
+  // page 2: date + exercise selection + set entry, for the body part chosen on page 1.
+  function renderRecordDetail(){
     const m = document.getElementById('main');
     const el = document.createElement('div');
 
-    // body part overview: today's rolling 7-day totals per body part (updates daily, tap to select)
-    el.appendChild(buildBodyPartOverview());
+    const backBtn = document.createElement('button');
+    backBtn.className = 'page-back-btn';
+    backBtn.textContent = '‹ 部位を選択';
+    backBtn.onclick = ()=>{ ui.recordView = 'overview'; render(); };
+    el.appendChild(backBtn);
 
     // date row
     const dateRow = document.createElement('div');
@@ -1530,7 +1563,6 @@
 
     m.innerHTML='';
     m.appendChild(el);
-    mountOverviewSparklines();
 
     // wire up controls
     document.getElementById('date-input').addEventListener('change', (e)=>{
@@ -1815,19 +1847,35 @@
     const prev = series.length>1 ? series[series.length-2] : null;
     return {cardio, series, empty:false, last, prev};
   }
-  // same shape as bodyPartSummary, but backed by the daily-filled series (used by the record-tab overview)
+  // backed by the daily-filled series (used by the record-tab overview). Rather than a day-over-day
+  // delta (which is flat almost every day, since the rolling window barely changes day to day),
+  // this surfaces the gap to the best 7-day rolling total ever recorded for that body part — i.e.
+  // "how many more kg today to set a new weekly best".
   function bodyPartSummaryOverview(bodyPart){
     const cardio = isCardio(bodyPart);
     const series = cardio ? rollingSeriesDualDailyAll(bodyPart) : rollingSeriesDailyAll(bodyPart);
     if(!series.length) return {cardio, series, empty:true};
-    const last = series[series.length-1];
-    const prev = series.length>1 ? series[series.length-2] : null;
-    return {cardio, series, empty:false, last, prev};
+    const today = toISO(new Date());
+    const last = series.find(p=>p.date===today) || series[series.length-1];
+    if(cardio){
+      const bestKm = series.reduce((m,p)=> p.date!==last.date && p.km>m ? p.km : m, 0);
+      const bestKcal = series.reduce((m,p)=> p.date!==last.date && p.kcal>m ? p.kcal : m, 0);
+      return {cardio, series, empty:false, last,
+        prGapKm: round1(bestKm - last.km),
+        prGapKcal: Math.round(bestKcal - last.kcal)};
+    }
+    const bestVol = series.reduce((m,p)=> p.date!==last.date && p.vol>m ? p.vol : m, 0);
+    return {cardio, series, empty:false, last, prGapVol: round1(bestVol - last.vol)};
   }
   function deltaBadgeHtml(diff, unit, mini){
     const cls = diff>0?'up':diff<0?'down':'flat';
     const sign = diff>0?'▲':diff<0?'▼':'―';
     return `<span class="score-delta ${cls}${mini?' mini':''}">${sign} ${Math.abs(diff)}${unit}</span>`;
+  }
+  // gap<=0 means today's rolling total already matches/beats the historical best (mini-card badge)
+  function prBadgeHtml(gap, unit){
+    if(gap<=0) return `<span class="score-delta pr mini">自己ベスト更新中</span>`;
+    return `<span class="score-delta flat mini">あと${gap}${unit}</span>`;
   }
 
   function renderGraphDetail(){
@@ -1991,12 +2039,7 @@
           <div class="mini-card-empty">まだ記録がありません</div>
         `;
       }else if(summary.cardio){
-        let badges = '';
-        if(summary.prev){
-          const diffKm = round1(summary.last.km - summary.prev.km);
-          const diffKcal = summary.last.kcal - summary.prev.kcal;
-          badges = deltaBadgeHtml(diffKm, 'km', true) + deltaBadgeHtml(diffKcal, 'kcal', true);
-        }
+        const badges = prBadgeHtml(summary.prGapKm, 'km') + prBadgeHtml(summary.prGapKcal, 'kcal');
         main.innerHTML = `
           <div class="mini-card-top">
             <span class="mini-card-name"><span class="dot" style="background:${b.hex}"></span>${b.label}</span>
@@ -2008,11 +2051,7 @@
           </div>
         `;
       }else{
-        let badge = '';
-        if(summary.prev){
-          const diff = summary.last.vol - summary.prev.vol;
-          badge = deltaBadgeHtml(diff, 'kg', true);
-        }
+        const badge = prBadgeHtml(summary.prGapVol, 'kg');
         main.innerHTML = `
           <div class="mini-card-top">
             <span class="mini-card-name"><span class="dot" style="background:${b.hex}"></span>${b.label}</span>
@@ -2052,6 +2091,7 @@
           ui.exercise = null;
           ui.showAddExercise = false;
           ui.editExercises = false;
+          ui.recordView = 'detail';
           render();
         };
       }
@@ -2093,7 +2133,9 @@
 
   document.querySelectorAll('nav.tabbar button').forEach(b=>{
     b.addEventListener('click', ()=>{
+      const enteringRecord = b.dataset.tab==='record';
       ui.tab = b.dataset.tab;
+      if(enteringRecord){ ui.recordView = 'overview'; ui.reorderMode = false; }
       render();
     });
   });
