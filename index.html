@@ -636,6 +636,27 @@
   .chart-legend .dot{
     width:8px;height:8px;border-radius:50%;display:inline-block;
   }
+  .range-slider-wrap{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .range-slider-label{
+    text-align:center;
+    font-family:'Oswald',sans-serif;
+    font-size:12px;
+    letter-spacing:0.08em;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .range-slider-wrap input[type=range]{
+    display:block;
+    width:100%;
+    accent-color:var(--gold);
+    height:4px;
+    cursor:pointer;
+  }
   .data-table{
     margin-top:14px;
     border-top:1px solid var(--border);
@@ -922,6 +943,13 @@
     cardio: ['トレッドミル','エアロバイク','クロストレーナー']
   };
   const STORAGE_KEY = 'plate-log-data-v1';
+  const GRAPH_RANGE_PRESETS = [
+    {days:7, label:'1週間'},
+    {days:14, label:'2週間'},
+    {days:30, label:'1ヶ月'},
+    {days:60, label:'2ヶ月'},
+    {days:90, label:'3ヶ月'}
+  ];
 
   let state = {
     sessions: [], // {id, date, bodyPart, exercise, sets:[{weight,reps}]}
@@ -938,6 +966,7 @@
     editExercises: false,
     draft: {weight:20, reps:10},
     graphBodyPart: 'chest',
+    graphRangeDays: 14, // default window for the detail-graph slider (2週間)
     reorderMode: false
   };
   let lastDeleted = null; // for undo
@@ -1848,10 +1877,28 @@
     const prev = series.length>1 ? series[series.length-2] : null;
     return {cardio, series, empty:false, last, prev};
   }
+  // Tracks the running all-time-best of a daily-filled series and the "previous" best that stood
+  // right before the current peak was set. Comparing only to "all other days" (as an earlier version
+  // did) breaks the day after a PR: yesterday's rolling total is still riding the same still-active
+  // record, so it gets picked up as a competing "previous best" and the margin collapses to 0. Instead,
+  // walk the series forward and only update prevBest when a NEW peak is actually set, so the margin
+  // stays constant for as long as today's total sits at that peak (even with no training since), and
+  // the gap-to-reclaim stays correctly non-zero for every day after the record-supporting session ages
+  // out of the 7-day window (not just the first such day).
+  function trackBestProgress(series, last, field){
+    let runningBest = 0, prevBest = 0;
+    series.forEach(p=>{
+      if(p.date>last.date) return;
+      const v = p[field];
+      if(v>runningBest){ prevBest = runningBest; runningBest = v; }
+    });
+    const current = last[field];
+    return {best:runningBest, prevBest, current, atBest: runningBest>0 && current>=runningBest};
+  }
   // backed by the daily-filled series (used by the record-tab overview). Rather than a day-over-day
   // delta (which is flat almost every day, since the rolling window barely changes day to day),
-  // this surfaces the gap to the best 7-day rolling total ever recorded for that body part — i.e.
-  // "how many more kg today to set a new weekly best".
+  // this surfaces progress toward the best 7-day rolling total ever recorded for that body part — i.e.
+  // "how many more kg today to set a new weekly best", or how much the current best was beaten by.
   function bodyPartSummaryOverview(bodyPart){
     const cardio = isCardio(bodyPart);
     const series = cardio ? rollingSeriesDualDailyAll(bodyPart) : rollingSeriesDailyAll(bodyPart);
@@ -1859,23 +1906,23 @@
     const today = toISO(new Date());
     const last = series.find(p=>p.date===today) || series[series.length-1];
     if(cardio){
-      const bestKm = series.reduce((m,p)=> p.date!==last.date && p.km>m ? p.km : m, 0);
-      const bestKcal = series.reduce((m,p)=> p.date!==last.date && p.kcal>m ? p.kcal : m, 0);
+      const km = trackBestProgress(series, last, 'km');
+      const kcal = trackBestProgress(series, last, 'kcal');
       return {cardio, series, empty:false, last,
-        prGapKm: round1(bestKm - last.km),
-        prGapKcal: Math.round(bestKcal - last.kcal)};
+        kmAtBest: km.atBest, kmMargin: round1(km.best-km.prevBest), kmGap: round1(km.best-km.current),
+        kcalAtBest: kcal.atBest, kcalMargin: Math.round(kcal.best-kcal.prevBest), kcalGap: Math.round(kcal.best-kcal.current)};
     }
-    const bestVol = series.reduce((m,p)=> p.date!==last.date && p.vol>m ? p.vol : m, 0);
-    return {cardio, series, empty:false, last, prGapVol: round1(bestVol - last.vol)};
+    const vol = trackBestProgress(series, last, 'vol');
+    return {cardio, series, empty:false, last,
+      volAtBest: vol.atBest, volMargin: round1(vol.best-vol.prevBest), volGap: round1(vol.best-vol.current)};
   }
   function deltaBadgeHtml(diff, unit, mini){
     const cls = diff>0?'up':diff<0?'down':'flat';
     const sign = diff>0?'▲':diff<0?'▼':'―';
     return `<span class="score-delta ${cls}${mini?' mini':''}">${sign} ${Math.abs(diff)}${unit}</span>`;
   }
-  // gap<=0 means today's rolling total already matches/beats the historical best (mini-card badge)
-  function prBadgeHtml(gap, unit){
-    if(gap<=0) return `<span class="score-delta pr mini">BEST <span class="pr-amount">${-gap}${unit}</span>更新中</span>`;
+  function prBadgeHtml(atBest, margin, gap, unit){
+    if(atBest) return `<span class="score-delta pr mini">BEST <span class="pr-amount">${margin}${unit}</span>更新中</span>`;
     return `<span class="score-delta flat mini">あと${gap}${unit}</span>`;
   }
 
@@ -1914,6 +1961,12 @@
     }
 
     const series = summary.series, last = summary.last, prev = summary.prev;
+    function seriesForRange(days){
+      const cutoff = addDays(toISO(new Date()), -(days-1));
+      return series.filter(p=>p.date>=cutoff);
+    }
+    let displaySeries = seriesForRange(ui.graphRangeDays);
+    const rangeIdx = Math.max(0, GRAPH_RANGE_PRESETS.findIndex(p=>p.days===ui.graphRangeDays));
 
     if(cardio){
       let deltaKmHtml = '', deltaKcalHtml = '';
@@ -1945,6 +1998,10 @@
           <span class="legend-item"><span class="dot" style="background:${CARDIO_KCAL_HEX}"></span>カロリー (kcal)</span>
         </div>
         <div class="chart-wrap" id="chart-wrap"></div>
+        <div class="range-slider-wrap">
+          <div class="range-slider-label" id="range-slider-label">${GRAPH_RANGE_PRESETS[rangeIdx].label}</div>
+          <input type="range" id="range-slider" min="0" max="${GRAPH_RANGE_PRESETS.length-1}" step="1" value="${rangeIdx}">
+        </div>
         <div class="data-table" id="data-table"></div>
       `;
     }else{
@@ -1962,6 +2019,10 @@
           ${deltaHtml}
         </div>
         <div class="chart-wrap" id="chart-wrap"></div>
+        <div class="range-slider-wrap">
+          <div class="range-slider-label" id="range-slider-label">${GRAPH_RANGE_PRESETS[rangeIdx].label}</div>
+          <input type="range" id="range-slider" min="0" max="${GRAPH_RANGE_PRESETS.length-1}" step="1" value="${rangeIdx}">
+        </div>
         <div class="data-table" id="data-table"></div>
       `;
     }
@@ -1970,30 +2031,47 @@
     m.innerHTML='';
     m.appendChild(el);
 
-    // chart (self-contained SVG, no external libraries required)
-    if(cardio){
-      document.getElementById('chart-wrap').innerHTML = buildDualLineChartSVG(
-        series.map(p=>({date:p.date, a:p.km, b:p.kcal})),
-        b.hex, CARDIO_KCAL_HEX
-      );
-    }else{
-      document.getElementById('chart-wrap').innerHTML = buildLineChartSVG(series, b.hex);
-    }
-
-    const table = document.getElementById('data-table');
-    [...series].reverse().forEach((p,i)=>{
-      const row = document.createElement('div');
-      row.className='row';
-      if(cardio){
-        row.innerHTML = `<span class="d">${fmtLong(p.date)}</span><span>${p.km}km / ${p.kcal}kcal</span>`;
-      }else{
-        const idx = series.length-1-i;
-        const prevP = idx>0 ? series[idx-1] : null;
-        const diff = prevP ? p.vol-prevP.vol : null;
-        const diffStr = diff===null ? '' : (diff>0?`+${diff}`:`${diff}`);
-        row.innerHTML = `<span class="d">${fmtLong(p.date)}</span><span>${p.vol}kg ${diff!==null?`<span style="color:${diff>0?'var(--arms)':diff<0?'var(--danger)':'var(--text-muted)'}">(${diffStr})</span>`:''}</span>`;
+    // chart (self-contained SVG, no external libraries required) — shows only the slider-selected
+    // range, while the score-top totals above always reflect the true, unfiltered last 7 days
+    function renderChartAndTable(){
+      const chartWrap = document.getElementById('chart-wrap');
+      const table = document.getElementById('data-table');
+      table.innerHTML = '';
+      if(!displaySeries.length){
+        chartWrap.innerHTML = `<div class="empty-state" style="padding:20px 10px; font-size:13px;">この期間の記録はありません。</div>`;
+        return;
       }
-      table.appendChild(row);
+      if(cardio){
+        chartWrap.innerHTML = buildDualLineChartSVG(
+          displaySeries.map(p=>({date:p.date, a:p.km, b:p.kcal})),
+          b.hex, CARDIO_KCAL_HEX
+        );
+      }else{
+        chartWrap.innerHTML = buildLineChartSVG(displaySeries, b.hex);
+      }
+      [...displaySeries].reverse().forEach(p=>{
+        const row = document.createElement('div');
+        row.className='row';
+        if(cardio){
+          row.innerHTML = `<span class="d">${fmtLong(p.date)}</span><span>${p.km}km / ${p.kcal}kcal</span>`;
+        }else{
+          const idx = series.indexOf(p);
+          const prevP = idx>0 ? series[idx-1] : null;
+          const diff = prevP ? p.vol-prevP.vol : null;
+          const diffStr = diff===null ? '' : (diff>0?`+${diff}`:`${diff}`);
+          row.innerHTML = `<span class="d">${fmtLong(p.date)}</span><span>${p.vol}kg ${diff!==null?`<span style="color:${diff>0?'var(--arms)':diff<0?'var(--danger)':'var(--text-muted)'}">(${diffStr})</span>`:''}</span>`;
+        }
+        table.appendChild(row);
+      });
+    }
+    renderChartAndTable();
+
+    document.getElementById('range-slider').addEventListener('input', (e)=>{
+      const preset = GRAPH_RANGE_PRESETS[parseInt(e.target.value)];
+      ui.graphRangeDays = preset.days;
+      displaySeries = seriesForRange(preset.days);
+      document.getElementById('range-slider-label').textContent = preset.label;
+      renderChartAndTable();
     });
   }
 
@@ -2040,7 +2118,8 @@
           <div class="mini-card-empty">まだ記録がありません</div>
         `;
       }else if(summary.cardio){
-        const badges = prBadgeHtml(summary.prGapKm, 'km') + prBadgeHtml(summary.prGapKcal, 'kcal');
+        const badges = prBadgeHtml(summary.kmAtBest, summary.kmMargin, summary.kmGap, 'km')
+          + prBadgeHtml(summary.kcalAtBest, summary.kcalMargin, summary.kcalGap, 'kcal');
         main.innerHTML = `
           <div class="mini-card-top">
             <span class="mini-card-name"><span class="dot" style="background:${b.hex}"></span>${b.label}</span>
@@ -2052,7 +2131,7 @@
           </div>
         `;
       }else{
-        const badge = prBadgeHtml(summary.prGapVol, 'kg');
+        const badge = prBadgeHtml(summary.volAtBest, summary.volMargin, summary.volGap, 'kg');
         main.innerHTML = `
           <div class="mini-card-top">
             <span class="mini-card-name"><span class="dot" style="background:${b.hex}"></span>${b.label}</span>
