@@ -59,7 +59,7 @@
     position:relative;
   }
   header.top{
-    padding:calc(14px + var(--safe-top)) 20px 12px;
+    padding:calc(10px + var(--safe-top)) 20px 10px;
     display:flex;
     align-items:baseline;
     justify-content:space-between;
@@ -68,19 +68,10 @@
   .wordmark{
     font-family:'Oswald',sans-serif;
     font-weight:700;
-    font-size:22px;
+    font-size:20px;
     letter-spacing:0.06em;
     color:var(--gold);
     text-transform:uppercase;
-  }
-  .wordmark small{
-    display:block;
-    font-family:'Inter',sans-serif;
-    font-weight:500;
-    font-size:11px;
-    letter-spacing:0.02em;
-    color:var(--text-muted);
-    text-transform:none;
   }
   main{
     flex:1;
@@ -304,8 +295,15 @@
     background:rgba(232,178,61,0.08);
     border:1px solid rgba(232,178,61,0.35);
     border-radius:12px;
-    padding:10px 12px;
+    padding:9px 12px;
     margin-bottom:14px;
+  }
+  .target-chip .target-top-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:6px;
   }
   .target-chip .target-label{
     font-family:'Oswald',sans-serif;
@@ -313,7 +311,6 @@
     letter-spacing:0.1em;
     color:var(--text-muted);
     text-transform:uppercase;
-    margin-bottom:6px;
   }
   .target-chip .target-body{
     font-size:13px;
@@ -322,7 +319,6 @@
     align-items:center;
     gap:6px;
     flex-wrap:wrap;
-    margin-bottom:10px;
   }
   .target-chip .target-body .mono{
     font-family:'JetBrains Mono',monospace;
@@ -330,20 +326,14 @@
     color:var(--text);
   }
   .target-chip .target-body .mono.gold{color:var(--gold);}
-  .target-chip .target-controls{
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    gap:8px;
-    flex-wrap:wrap;
-  }
   .target-chip .target-apply{
+    flex:0 0 auto;
     background:none;
     border:1px solid var(--gold);
     color:var(--gold);
-    font-size:12px;
+    font-size:11px;
     font-weight:700;
-    padding:6px 14px;
+    padding:4px 10px;
     border-radius:20px;
   }
 
@@ -570,6 +560,71 @@
     line-height:1.7;
   }
 
+  /* segmented control (history: 日付別 / 部位別) */
+  .segmented{
+    display:flex;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:3px;
+    margin-bottom:16px;
+  }
+  .segmented button{
+    flex:1;
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-size:13px;
+    font-weight:600;
+    padding:8px 0;
+    border-radius:9px;
+  }
+  .segmented button.active{
+    background:var(--gold);
+    color:#18170F;
+  }
+
+  /* history: 部位別 view */
+  .bp-history-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .bp-history-row{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .bp-history-row .bp-history-main{flex:1; min-width:0;}
+  .bp-history-row .bp-history-ex{
+    font-size:14px;
+    font-weight:600;
+    color:var(--text);
+    margin-bottom:4px;
+  }
+  .bp-history-row .bp-history-sets{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--text-muted);
+  }
+  .bp-history-row .bp-history-right{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .bp-history-row .bp-history-date{
+    font-size:12px;
+    color:var(--text-muted);
+    white-space:nowrap;
+  }
+  .bp-history-row .del{background:none;border:none;color:var(--text-muted);font-size:14px;}
+
   /* graph */
   .score-card{
     background:var(--surface);
@@ -636,6 +691,50 @@
   .chart-legend .dot{
     width:8px;height:8px;border-radius:50%;display:inline-block;
   }
+  .chart-legend .dot.hollow{
+    background:none;
+    border:1.5px solid var(--text-muted);
+    box-sizing:border-box;
+  }
+  .chart-legend .legend-line{
+    width:12px;height:0;border-top:2px solid var(--text-muted);display:inline-block;opacity:0.6;
+  }
+  .chart-legend .help-icon-btn{margin-left:auto;}
+  .ma-summary{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .ma-summary-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+  }
+  .ma-summary-row + .ma-summary-row{margin-top:12px;}
+  .ma-summary-label{
+    font-size:11px;
+    color:var(--text-muted);
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .ma-summary-value{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:26px;
+    line-height:1;
+  }
+  .ma-summary-value span{font-size:14px; color:var(--text-muted); margin-left:4px; font-weight:500;}
+  .ma-summary-trend{
+    font-size:13px;
+    color:var(--text-muted);
+    margin-top:12px;
+  }
+  .ma-summary-trend .mono{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    color:var(--gold);
+  }
   .range-slider-wrap{
     margin-top:14px;
     padding-top:14px;
@@ -657,19 +756,6 @@
     height:4px;
     cursor:pointer;
   }
-  .data-table{
-    margin-top:14px;
-    border-top:1px solid var(--border);
-  }
-  .data-table .row{
-    display:flex;
-    justify-content:space-between;
-    padding:7px 0;
-    border-bottom:1px solid var(--border);
-    font-family:'JetBrains Mono',monospace;
-    font-size:12.5px;
-  }
-  .data-table .row .d{color:var(--text-muted);}
 
   /* graph overview */
   .graph-overview-header{
@@ -679,6 +765,25 @@
     margin-bottom:14px;
   }
   .graph-overview-header .section-title{margin:0;}
+  .title-with-help{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .help-icon-btn{
+    flex:0 0 auto;
+    width:18px;height:18px;
+    border-radius:50%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    font-size:11px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+  }
   .reorder-toggle{
     background:var(--surface);
     border:1px solid var(--border);
@@ -899,7 +1004,7 @@
 <body>
 <div id="app">
   <header class="top">
-    <div class="wordmark">PLATE LOG<small>重量記録</small></div>
+    <div class="wordmark">PLATE LOG</div>
   </header>
   <main id="main"></main>
   <div id="toast"></div>
@@ -950,6 +1055,23 @@
     {days:60, label:'2ヶ月'},
     {days:90, label:'3ヶ月'}
   ];
+  const MA_WINDOW = 4; // moving-average / "rising streak" window for the detail graph trend line
+
+  function toISO(d){
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  const DAY_CUTOVER_HOUR = 3; // "today" doesn't roll over to the next calendar date until 3am local time
+  function logicalToday(){
+    const d = new Date();
+    if(d.getHours() < DAY_CUTOVER_HOUR) d.setDate(d.getDate()-1);
+    return toISO(d);
+  }
+  function addDays(iso, n){
+    const d = new Date(iso+'T00:00:00');
+    d.setDate(d.getDate()+n);
+    return toISO(d);
+  }
 
   let state = {
     sessions: [], // {id, date, bodyPart, exercise, sets:[{weight,reps}]}
@@ -959,7 +1081,7 @@
   let ui = {
     tab: 'record',
     recordView: 'overview', // 'overview' (body-part picker) | 'detail' (date + exercise + set entry)
-    date: toISO(new Date()),
+    date: logicalToday(),
     bodyPart: 'chest',
     exercise: null,
     showAddExercise: false,
@@ -967,19 +1089,12 @@
     draft: {weight:20, reps:10},
     graphBodyPart: 'chest',
     graphRangeDays: 14, // default window for the detail-graph slider (2週間)
-    reorderMode: false
+    reorderMode: false,
+    historyView: 'date', // 'date' | 'bodyPart'
+    historyBodyPart: 'chest'
   };
   let lastDeleted = null; // for undo
 
-  function toISO(d){
-    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
-    return `${y}-${m}-${day}`;
-  }
-  function addDays(iso, n){
-    const d = new Date(iso+'T00:00:00');
-    d.setDate(d.getDate()+n);
-    return toISO(d);
-  }
   function fmtShort(iso){
     const [y,m,d] = iso.split('-');
     return `${parseInt(m)}/${parseInt(d)}`;
@@ -1056,6 +1171,7 @@
     toastActive = true;
     const t = document.getElementById('toast');
     t.className = '';
+    t.innerHTML = '';
     item.build(t);
     t.classList.add('show');
     clearTimeout(t._timer);
@@ -1230,7 +1346,7 @@
       <button class="arrow" data-act="prev-day">‹</button>
       <div class="date-label">
         <span class="big">${fmtLong(ui.date)}</span>
-        ${ui.date===toISO(new Date()) ? '<span class="today-tag">TODAY</span>' : ''}
+        ${ui.date===logicalToday() ? '<span class="today-tag">TODAY</span>' : ''}
         <input type="date" value="${ui.date}" id="date-input">
       </div>
       <button class="arrow" data-act="next-day">›</button>
@@ -1370,14 +1486,14 @@
           const chip = document.createElement('div');
           chip.className = 'target-chip';
           chip.innerHTML = `
-            <div class="target-label">TODAY'S TARGET</div>
+            <div class="target-top-row">
+              <div class="target-label">TODAY'S TARGET</div>
+              <button class="target-apply" data-act="target-apply">適用</button>
+            </div>
             <div class="target-body">
               <span>前回記録の最高重量 <span class="mono gold">${suggestion.maxWeight}kg</span></span>
               <span>・</span>
               <span>最高回数 <span class="mono gold">${suggestion.maxReps}回</span></span>
-            </div>
-            <div class="target-controls">
-              <button class="target-apply" data-act="target-apply">適用</button>
             </div>
           `;
           chip.querySelector('[data-act="target-apply"]').onclick = ()=>{
@@ -1623,10 +1739,37 @@
   function renderHistory(){
     const m = document.getElementById('main');
     const el = document.createElement('div');
+
+    const seg = document.createElement('div');
+    seg.className = 'segmented';
+    const dateBtn = document.createElement('button');
+    dateBtn.textContent = '日付別';
+    dateBtn.className = ui.historyView==='date' ? 'active' : '';
+    dateBtn.onclick = ()=>{ ui.historyView = 'date'; render(); };
+    const bpBtn = document.createElement('button');
+    bpBtn.textContent = '部位別';
+    bpBtn.className = ui.historyView==='bodyPart' ? 'active' : '';
+    bpBtn.onclick = ()=>{ ui.historyView = 'bodyPart'; render(); };
+    seg.appendChild(dateBtn);
+    seg.appendChild(bpBtn);
+    el.appendChild(seg);
+
+    if(ui.historyView==='bodyPart') renderHistoryByBodyPart(el);
+    else renderHistoryByDate(el);
+
+    m.innerHTML='';
+    m.appendChild(el);
+  }
+
+  function renderHistoryByDate(el){
     const dates = [...new Set(state.sessions.map(s=>s.date))].sort().reverse();
 
     if(dates.length===0){
-      el.innerHTML = `<div class="empty-state">まだ記録がありません。<br>「記録」タブから最初のセットを記録しましょう。</div>`;
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = `まだ記録がありません。<br>「記録」タブから最初のセットを記録しましょう。`;
+      el.appendChild(empty);
+      return;
     }
 
     dates.forEach(date=>{
@@ -1698,9 +1841,84 @@
       });
       el.appendChild(block);
     });
+  }
 
-    m.innerHTML='';
-    m.appendChild(el);
+  function renderHistoryByBodyPart(el){
+    const chipRow = document.createElement('div');
+    chipRow.className = 'chip-row';
+    chipRow.style.marginBottom = '16px';
+    BODY_PARTS.forEach(b=>{
+      const chip = document.createElement('button');
+      chip.className = 'chip' + (ui.historyBodyPart===b.key ? ' active' : '');
+      chip.style.background = ui.historyBodyPart===b.key ? b.hex : '';
+      chip.innerHTML = `<span class="dot" style="background:${b.hex}"></span>${b.label}`;
+      chip.onclick = ()=>{ ui.historyBodyPart = b.key; render(); };
+      chipRow.appendChild(chip);
+    });
+    el.appendChild(chipRow);
+
+    const key = ui.historyBodyPart;
+    const b = bp(key);
+    const cardio = isCardio(key);
+    const sessions = state.sessions
+      .filter(s=>s.bodyPart===key && s.sets.length>0)
+      .slice()
+      .sort((s1,s2)=> s1.date<s2.date ? 1 : s1.date>s2.date ? -1 : 0); // newest first
+
+    if(!sessions.length){
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = `「${b.label}」の記録がまだありません。`;
+      el.appendChild(empty);
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'bp-history-list';
+    sessions.forEach(s=>{
+      const setsStr = cardio
+        ? s.sets.map(st=>`${st.distance}km/${st.calories}kcal`).join(' / ')
+        : s.sets.map(st=>`${st.weight}×${st.reps}`).join(' / ');
+
+      const row = document.createElement('div');
+      row.className = 'bp-history-row';
+
+      const main = document.createElement('div');
+      main.className = 'bp-history-main';
+      const exDiv = document.createElement('div');
+      exDiv.className = 'bp-history-ex';
+      exDiv.textContent = s.exercise;
+      const setsDiv = document.createElement('div');
+      setsDiv.className = 'bp-history-sets';
+      setsDiv.textContent = setsStr;
+      main.appendChild(exDiv);
+      main.appendChild(setsDiv);
+
+      const right = document.createElement('div');
+      right.className = 'bp-history-right';
+      const dateDiv = document.createElement('div');
+      dateDiv.className = 'bp-history-date';
+      dateDiv.textContent = fmtLong(s.date);
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '×';
+      del.onclick = ()=>{
+        const idx = state.sessions.indexOf(s);
+        const removed = state.sessions.splice(idx,1)[0];
+        saveData();
+        showToast(`${s.exercise}の記録を削除しました`, ()=>{
+          state.sessions.splice(idx,0,removed); saveData(); render();
+        });
+        render();
+      };
+      right.appendChild(dateDiv);
+      right.appendChild(del);
+
+      row.appendChild(main);
+      row.appendChild(right);
+      list.appendChild(row);
+    });
+    el.appendChild(list);
   }
 
   // ---------- GRAPH TAB ----------
@@ -1734,7 +1952,7 @@
     if(!recDates.length) return [];
     const minDate = recDates.reduce((a,b)=> a<b?a:b);
     const maxRecordDate = recDates.reduce((a,b)=> a>b?a:b);
-    const today = toISO(new Date());
+    const today = logicalToday();
     const end = maxRecordDate>today ? maxRecordDate : today;
     const result = [];
     for(let d=minDate; d<=end; d=addDays(d,1)){
@@ -1750,7 +1968,7 @@
     if(!recDates.length) return [];
     const minDate = recDates.reduce((a,b)=> a<b?a:b);
     const maxRecordDate = recDates.reduce((a,b)=> a>b?a:b);
-    const today = toISO(new Date());
+    const today = logicalToday();
     const end = maxRecordDate>today ? maxRecordDate : today;
     const result = [];
     for(let d=minDate; d<=end; d=addDays(d,1)){
@@ -1770,21 +1988,39 @@
     const pad = mini ? {top:3, right:3, bottom:3, left:3} : {top:14, right:34, bottom:24, left:34};
     const innerW = width - pad.left - pad.right;
     const innerH = height - pad.top - pad.bottom;
-    const maxA = Math.max(...series.map(p=>p.a), 1);
-    const maxB = Math.max(...series.map(p=>p.b), 1);
-    const stepX = series.length>1 ? innerW/(series.length-1) : 0;
-    const ptsA = series.map((p,i)=>{
-      const x = pad.left + (series.length>1 ? i*stepX : innerW/2);
+    // provisional: today's live (unconfirmed) point, drawn as a dashed extension + hollow marker.
+    // maSeries: N-record moving average, aligned 1:1 with `series` (confirmed points only).
+    const provisional = !mini ? (opts.provisional || null) : null;
+    const maSeries = !mini ? (opts.maSeries || null) : null;
+
+    const plotSeries = provisional ? [...series, provisional] : series;
+    const provisionalIdx = provisional ? plotSeries.length-1 : -1;
+    const confirmedCount = provisionalIdx===-1 ? plotSeries.length : provisionalIdx;
+
+    const maxA = Math.max(...plotSeries.map(p=>p.a), ...(maSeries ? maSeries.map(m=>m.a) : []), 1);
+    const maxB = Math.max(...plotSeries.map(p=>p.b), ...(maSeries ? maSeries.map(m=>m.b) : []), 1);
+    const stepX = plotSeries.length>1 ? innerW/(plotSeries.length-1) : 0;
+    const ptsA = plotSeries.map((p,i)=>{
+      const x = pad.left + (plotSeries.length>1 ? i*stepX : innerW/2);
       const y = pad.top + innerH - (p.a/maxA)*innerH;
       return {x,y,p};
     });
-    const ptsB = series.map((p,i)=>{
-      const x = pad.left + (series.length>1 ? i*stepX : innerW/2);
+    const ptsB = plotSeries.map((p,i)=>{
+      const x = pad.left + (plotSeries.length>1 ? i*stepX : innerW/2);
       const y = pad.top + innerH - (p.b/maxB)*innerH;
       return {x,y,p};
     });
-    const lineA = ptsA.map((pt,i)=> (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
-    const lineB = ptsB.map((pt,i)=> (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+    function splitPath(pts){
+      const confirmed = pts.slice(0, confirmedCount);
+      const solid = confirmed.map((pt,i)=> (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+      let dashedTail = '';
+      if(provisionalIdx>-1 && confirmed.length){
+        const lastPt = confirmed[confirmed.length-1], prov = pts[provisionalIdx];
+        dashedTail = `M${lastPt.x.toFixed(1)},${lastPt.y.toFixed(1)} L${prov.x.toFixed(1)},${prov.y.toFixed(1)}`;
+      }
+      return {confirmed, solid, dashedTail};
+    }
+    const splitA = splitPath(ptsA), splitB = splitPath(ptsB);
 
     let gridLines = '', xLabels = '', dotsA = '', dotsB = '';
     if(!mini){
@@ -1796,23 +2032,41 @@
         gridLines += `<text x="${(pad.left-6).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8" font-family="JetBrains Mono, monospace" fill="${colorA}">${valA}</text>`;
         gridLines += `<text x="${(width-pad.right+6).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="start" font-size="8" font-family="JetBrains Mono, monospace" fill="${colorB}">${valB}</text>`;
       }
-      const labelIdxs = series.length<=5 ? series.map((_,i)=>i) : [0, Math.floor((series.length-1)/2), series.length-1];
+      const labelIdxs = plotSeries.length<=5 ? plotSeries.map((_,i)=>i) : [0, Math.floor((plotSeries.length-1)/2), plotSeries.length-1];
       labelIdxs.forEach(i=>{
         const pt = ptsA[i];
         xLabels += `<text x="${pt.x.toFixed(1)}" y="${height-6}" text-anchor="middle" font-size="9" font-family="JetBrains Mono, monospace" fill="#9C9575">${fmtShort(pt.p.date)}</text>`;
       });
-      dotsA = ptsA.map(pt=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3.5" fill="${colorA}" stroke="#18170F" stroke-width="1.5"/>`).join('');
-      dotsB = ptsB.map(pt=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3.5" fill="${colorB}" stroke="#18170F" stroke-width="1.5"/>`).join('');
+      dotsA = splitA.confirmed.map(pt=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3.5" fill="${colorA}" stroke="#18170F" stroke-width="1.5"/>`).join('');
+      dotsB = splitB.confirmed.map(pt=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3.5" fill="${colorB}" stroke="#18170F" stroke-width="1.5"/>`).join('');
+      if(provisionalIdx>-1){
+        const ptA = ptsA[provisionalIdx], ptB = ptsB[provisionalIdx];
+        dotsA += `<circle cx="${ptA.x.toFixed(1)}" cy="${ptA.y.toFixed(1)}" r="4" fill="#18170F" stroke="${colorA}" stroke-width="2"/>`;
+        dotsB += `<circle cx="${ptB.x.toFixed(1)}" cy="${ptB.y.toFixed(1)}" r="4" fill="#18170F" stroke="${colorB}" stroke-width="2"/>`;
+      }
     }else if(ptsA.length===1){
       // single-point series would otherwise render nothing at all in mini mode
       dotsA = `<circle cx="${ptsA[0].x.toFixed(1)}" cy="${ptsA[0].y.toFixed(1)}" r="2.5" fill="${colorA}"/>`;
       dotsB = `<circle cx="${ptsB[0].x.toFixed(1)}" cy="${ptsB[0].y.toFixed(1)}" r="2.5" fill="${colorB}"/>`;
     }
 
+    let maLines = '';
+    if(maSeries && maSeries.length && splitA.confirmed.length){
+      const maPtsA = maSeries.map((mp,i)=>({x:splitA.confirmed[i].x, y: pad.top + innerH - (mp.a/maxA)*innerH}));
+      const maPtsB = maSeries.map((mp,i)=>({x:splitB.confirmed[i].x, y: pad.top + innerH - (mp.b/maxB)*innerH}));
+      const maPathA = maPtsA.map((pt,i)=> (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+      const maPathB = maPtsB.map((pt,i)=> (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+      maLines = `<path d="${maPathA}" fill="none" stroke="${colorA}" stroke-width="1.5" stroke-opacity="0.55" stroke-linejoin="round" stroke-linecap="round"/>`
+        + `<path d="${maPathB}" fill="none" stroke="${colorB}" stroke-width="1.5" stroke-opacity="0.55" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+
     return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:${mini?'100%':'220px'};display:block;">
       ${gridLines}
-      <path d="${lineA}" fill="none" stroke="${colorA}" stroke-width="${mini?1.5:2.5}" stroke-linejoin="round" stroke-linecap="round"/>
-      <path d="${lineB}" fill="none" stroke="${colorB}" stroke-width="${mini?1.5:2.5}" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="${mini?'3 2':'4 3'}"/>
+      <path d="${splitA.solid}" fill="none" stroke="${colorA}" stroke-width="${mini?1.5:2.5}" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${splitB.solid}" fill="none" stroke="${colorB}" stroke-width="${mini?1.5:2.5}" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="${mini?'3 2':'4 3'}"/>
+      ${splitA.dashedTail ? `<path d="${splitA.dashedTail}" fill="none" stroke="${colorA}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4"/>` : ''}
+      ${splitB.dashedTail ? `<path d="${splitB.dashedTail}" fill="none" stroke="${colorB}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="2 3" stroke-opacity="0.75"/>` : ''}
+      ${maLines}
       ${dotsA}
       ${dotsB}
       ${xLabels}
@@ -1826,16 +2080,32 @@
     const pad = mini ? {top:3, right:3, bottom:3, left:3} : {top:14, right:12, bottom:24, left:34};
     const innerW = width - pad.left - pad.right;
     const innerH = height - pad.top - pad.bottom;
-    const maxVal = Math.max(...series.map(p=>p.vol), 1);
-    const stepX = series.length>1 ? innerW/(series.length-1) : 0;
-    const points = series.map((p,i)=>{
-      const x = pad.left + (series.length>1 ? i*stepX : innerW/2);
+    // provisional: today's live (unconfirmed) point, drawn as a dashed extension + hollow marker.
+    // maSeries: N-record moving average, aligned 1:1 with `series` (confirmed points only).
+    const provisional = !mini ? (opts.provisional || null) : null;
+    const maSeries = !mini ? (opts.maSeries || null) : null;
+
+    const plotSeries = provisional ? [...series, provisional] : series;
+    const provisionalIdx = provisional ? plotSeries.length-1 : -1;
+    const confirmedCount = provisionalIdx===-1 ? plotSeries.length : provisionalIdx;
+
+    const maxVal = Math.max(...plotSeries.map(p=>p.vol), ...(maSeries ? maSeries.map(m=>m.ma) : []), 1);
+    const stepX = plotSeries.length>1 ? innerW/(plotSeries.length-1) : 0;
+    const points = plotSeries.map((p,i)=>{
+      const x = pad.left + (plotSeries.length>1 ? i*stepX : innerW/2);
       const y = pad.top + innerH - (p.vol/maxVal)*innerH;
       return {x,y,p};
     });
-    const linePath = points.map((pt,i)=> (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+    const confirmedPoints = points.slice(0, confirmedCount);
+    const solidLinePath = confirmedPoints.map((pt,i)=> (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+    const fullLinePath = points.map((pt,i)=> (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+    let dashedLinePath = '';
+    if(provisionalIdx>-1 && confirmedPoints.length){
+      const lastPt = confirmedPoints[confirmedPoints.length-1], prov = points[provisionalIdx];
+      dashedLinePath = `M${lastPt.x.toFixed(1)},${lastPt.y.toFixed(1)} L${prov.x.toFixed(1)},${prov.y.toFixed(1)}`;
+    }
     const floorY = (pad.top+innerH).toFixed(1);
-    const areaPath = points.length ? linePath + ` L${points[points.length-1].x.toFixed(1)},${floorY} L${points[0].x.toFixed(1)},${floorY} Z` : '';
+    const areaPath = points.length ? fullLinePath + ` L${points[points.length-1].x.toFixed(1)},${floorY} L${points[0].x.toFixed(1)},${floorY} Z` : '';
 
     let gridLines = '', xLabels = '', dots = '';
     if(!mini){
@@ -1850,9 +2120,20 @@
         const pt = points[i];
         xLabels += `<text x="${pt.x.toFixed(1)}" y="${height-6}" text-anchor="middle" font-size="9" font-family="JetBrains Mono, monospace" fill="#9C9575">${fmtShort(pt.p.date)}</text>`;
       });
-      dots = points.map(pt=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4" fill="${colorHex}" stroke="#18170F" stroke-width="2"/>`).join('');
+      dots = confirmedPoints.map(pt=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4" fill="${colorHex}" stroke="#18170F" stroke-width="2"/>`).join('');
+      if(provisionalIdx>-1){
+        const pt = points[provisionalIdx];
+        dots += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4.5" fill="#18170F" stroke="${colorHex}" stroke-width="2.5"/>`;
+      }
     }else if(points.length===1){
       dots = `<circle cx="${points[0].x.toFixed(1)}" cy="${points[0].y.toFixed(1)}" r="2.5" fill="${colorHex}"/>`;
+    }
+
+    let maLine = '';
+    if(maSeries && maSeries.length && confirmedPoints.length){
+      const maPoints = maSeries.map((mp,i)=>({x:confirmedPoints[i].x, y: pad.top + innerH - (mp.ma/maxVal)*innerH}));
+      const maPath = maPoints.map((pt,i)=> (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+      maLine = `<path d="${maPath}" fill="none" stroke="${colorHex}" stroke-width="1.5" stroke-opacity="0.55" stroke-linejoin="round" stroke-linecap="round"/>`;
     }
 
     return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:${mini?'100%':'220px'};display:block;">
@@ -1862,10 +2143,38 @@
       </linearGradient></defs>
       ${gridLines}
       <path d="${areaPath}" fill="url(#${gradId})" stroke="none"/>
-      <path d="${linePath}" fill="none" stroke="${colorHex}" stroke-width="${mini?1.5:2.5}" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${solidLinePath}" fill="none" stroke="${colorHex}" stroke-width="${mini?1.5:2.5}" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dashedLinePath ? `<path d="${dashedLinePath}" fill="none" stroke="${colorHex}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4"/>` : ''}
+      ${maLine}
       ${dots}
       ${xLabels}
     </svg>`;
+  }
+
+  // N-record moving average (growing/cumulative until N confirmed points exist), keyed by date so
+  // it can be aligned back to the confirmed series it was built from.
+  function movingAverageSingle(series, field, n){
+    return series.map((p,i)=>{
+      const window = series.slice(Math.max(0, i-n+1), i+1);
+      const avg = window.reduce((a,x)=>a+x[field],0) / window.length;
+      return {date:p.date, ma: round1(avg)};
+    });
+  }
+  function movingAverageDual(series, n){
+    return series.map((p,i)=>{
+      const window = series.slice(Math.max(0, i-n+1), i+1);
+      const avgA = window.reduce((a,x)=>a+x.km,0) / window.length;
+      const avgB = window.reduce((a,x)=>a+x.kcal,0) / window.length;
+      return {date:p.date, a: round1(avgA), b: Math.round(avgB)};
+    });
+  }
+  // how many of the last N point-to-point changes in a moving-average series were increases
+  function maRisingCount(maSeries, field, n){
+    if(maSeries.length<2) return {rising:0, compared:0};
+    const deltas = [];
+    for(let i=1;i<maSeries.length;i++) deltas.push(maSeries[i][field]-maSeries[i-1][field]);
+    const lastN = deltas.slice(-n);
+    return {rising: lastN.filter(d=>d>0).length, compared: lastN.length};
   }
 
   // shared "直近7日間合計・前回比" data lookup, used by both the overview mini-cards and the detail score card
@@ -1903,7 +2212,7 @@
     const cardio = isCardio(bodyPart);
     const series = cardio ? rollingSeriesDualDailyAll(bodyPart) : rollingSeriesDailyAll(bodyPart);
     if(!series.length) return {cardio, series, empty:true};
-    const today = toISO(new Date());
+    const today = logicalToday();
     const last = series.find(p=>p.date===today) || series[series.length-1];
     if(cardio){
       const km = trackBestProgress(series, last, 'km');
@@ -1962,11 +2271,21 @@
 
     const series = summary.series, last = summary.last, prev = summary.prev;
     function seriesForRange(days){
-      const cutoff = addDays(toISO(new Date()), -(days-1));
+      const cutoff = addDays(logicalToday(), -(days-1));
       return series.filter(p=>p.date>=cutoff);
     }
     let displaySeries = seriesForRange(ui.graphRangeDays);
     const rangeIdx = Math.max(0, GRAPH_RANGE_PRESETS.findIndex(p=>p.days===ui.graphRangeDays));
+
+    // "本日" provisional point: today's live rolling total, shown as a dashed/hollow extension until
+    // a real set is logged today (at which point it becomes a normal confirmed point in `series`).
+    const overviewSummary = bodyPartSummaryOverview(ui.graphBodyPart);
+    const showProvisional = last.date < logicalToday();
+    const provisionalPoint = !showProvisional ? null
+      : cardio ? {date: logicalToday(), a: overviewSummary.last.km, b: overviewSummary.last.kcal}
+      : {date: logicalToday(), vol: overviewSummary.last.vol};
+
+    const graphHelpText = 'トレーニングした日ごとの記録です。点線は本日の暫定値です';
 
     if(cardio){
       let deltaKmHtml = '', deltaKcalHtml = '';
@@ -1976,6 +2295,11 @@
         const diffKcal = last.kcal - prev.kcal;
         deltaKcalHtml = deltaBadgeHtml(diffKcal, 'kcal', false);
       }
+      const maDualFull = movingAverageDual(series, MA_WINDOW);
+      const maLastD = maDualFull[maDualFull.length-1];
+      const maPrevD = maDualFull.length>1 ? maDualFull[maDualFull.length-2] : null;
+      const trendKm = maRisingCount(maDualFull, 'a', MA_WINDOW);
+      const trendKcal = maRisingCount(maDualFull, 'b', MA_WINDOW);
       card.innerHTML = `
         <div class="score-top score-top-dual">
           <div class="score-block">
@@ -1996,13 +2320,32 @@
         <div class="chart-legend">
           <span class="legend-item"><span class="dot" style="background:${b.hex}"></span>距離 (km)</span>
           <span class="legend-item"><span class="dot" style="background:${CARDIO_KCAL_HEX}"></span>カロリー (kcal)</span>
+          <span class="legend-item"><span class="dot hollow"></span>本日（ライブ）</span>
+          <button type="button" class="help-icon-btn" data-act="graph-help">?</button>
         </div>
         <div class="chart-wrap" id="chart-wrap"></div>
         <div class="range-slider-wrap">
           <div class="range-slider-label" id="range-slider-label">${GRAPH_RANGE_PRESETS[rangeIdx].label}</div>
           <input type="range" id="range-slider" min="0" max="${GRAPH_RANGE_PRESETS.length-1}" step="1" value="${rangeIdx}">
         </div>
-        <div class="data-table" id="data-table"></div>
+        <div class="ma-summary">
+          <div class="ma-summary-row">
+            <div>
+              <div class="ma-summary-label">${MA_WINDOW}回移動平均 距離</div>
+              <div class="ma-summary-value" style="color:${b.hex}">${maLastD.a}<span>km</span></div>
+            </div>
+            ${maPrevD ? deltaBadgeHtml(round1(maLastD.a-maPrevD.a), 'km', false) : ''}
+          </div>
+          <div class="ma-summary-row">
+            <div>
+              <div class="ma-summary-label">${MA_WINDOW}回移動平均 カロリー</div>
+              <div class="ma-summary-value" style="color:${CARDIO_KCAL_HEX}">${maLastD.b}<span>kcal</span></div>
+            </div>
+            ${maPrevD ? deltaBadgeHtml(maLastD.b-maPrevD.b, 'kcal', false) : ''}
+          </div>
+          ${trendKm.compared>0 ? `<div class="ma-summary-trend">距離: 直近${trendKm.compared}回中 <span class="mono">${trendKm.rising}回</span> 上昇</div>` : ''}
+          ${trendKcal.compared>0 ? `<div class="ma-summary-trend">カロリー: 直近${trendKcal.compared}回中 <span class="mono">${trendKcal.rising}回</span> 上昇</div>` : ''}
+        </div>
       `;
     }else{
       let deltaHtml = '';
@@ -2010,6 +2353,10 @@
         const diff = last.vol - prev.vol;
         deltaHtml = deltaBadgeHtml(diff, 'kg', false);
       }
+      const maFull = movingAverageSingle(series, 'vol', MA_WINDOW);
+      const maLast = maFull[maFull.length-1];
+      const maPrev = maFull.length>1 ? maFull[maFull.length-2] : null;
+      const trend = maRisingCount(maFull, 'ma', MA_WINDOW);
       card.innerHTML = `
         <div class="score-top">
           <div>
@@ -2018,12 +2365,27 @@
           </div>
           ${deltaHtml}
         </div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="dot" style="background:${b.hex}"></span>確定</span>
+          <span class="legend-item"><span class="dot hollow"></span>本日（ライブ）</span>
+          <span class="legend-item"><span class="legend-line"></span>${MA_WINDOW}回移動平均</span>
+          <button type="button" class="help-icon-btn" data-act="graph-help">?</button>
+        </div>
         <div class="chart-wrap" id="chart-wrap"></div>
         <div class="range-slider-wrap">
           <div class="range-slider-label" id="range-slider-label">${GRAPH_RANGE_PRESETS[rangeIdx].label}</div>
           <input type="range" id="range-slider" min="0" max="${GRAPH_RANGE_PRESETS.length-1}" step="1" value="${rangeIdx}">
         </div>
-        <div class="data-table" id="data-table"></div>
+        <div class="ma-summary">
+          <div class="ma-summary-row">
+            <div>
+              <div class="ma-summary-label">${MA_WINDOW}回移動平均</div>
+              <div class="ma-summary-value" style="color:${b.hex}">${maLast.ma}<span>kg</span></div>
+            </div>
+            ${maPrev ? deltaBadgeHtml(round1(maLast.ma-maPrev.ma), 'kg', false) : ''}
+          </div>
+          ${trend.compared>0 ? `<div class="ma-summary-trend">直近${trend.compared}回中 <span class="mono">${trend.rising}回</span> 上昇</div>` : ''}
+        </div>
       `;
     }
     el.appendChild(card);
@@ -2031,47 +2393,37 @@
     m.innerHTML='';
     m.appendChild(el);
 
+    card.querySelector('[data-act="graph-help"]').onclick = ()=> showToast(graphHelpText);
+
     // chart (self-contained SVG, no external libraries required) — shows only the slider-selected
-    // range, while the score-top totals above always reflect the true, unfiltered last 7 days
-    function renderChartAndTable(){
+    // range, while the score-top/MA summary above always reflect the true, unfiltered full history
+    function renderChart(){
       const chartWrap = document.getElementById('chart-wrap');
-      const table = document.getElementById('data-table');
-      table.innerHTML = '';
       if(!displaySeries.length){
         chartWrap.innerHTML = `<div class="empty-state" style="padding:20px 10px; font-size:13px;">この期間の記録はありません。</div>`;
         return;
       }
+      const prov = showProvisional && displaySeries.length ? provisionalPoint : null;
       if(cardio){
+        const maForChart = movingAverageDual(series, MA_WINDOW).slice(-displaySeries.length);
         chartWrap.innerHTML = buildDualLineChartSVG(
           displaySeries.map(p=>({date:p.date, a:p.km, b:p.kcal})),
-          b.hex, CARDIO_KCAL_HEX
+          b.hex, CARDIO_KCAL_HEX,
+          {provisional: prov, maSeries: maForChart}
         );
       }else{
-        chartWrap.innerHTML = buildLineChartSVG(displaySeries, b.hex);
+        const maForChart = movingAverageSingle(series, 'vol', MA_WINDOW).slice(-displaySeries.length);
+        chartWrap.innerHTML = buildLineChartSVG(displaySeries, b.hex, {provisional: prov, maSeries: maForChart});
       }
-      [...displaySeries].reverse().forEach(p=>{
-        const row = document.createElement('div');
-        row.className='row';
-        if(cardio){
-          row.innerHTML = `<span class="d">${fmtLong(p.date)}</span><span>${p.km}km / ${p.kcal}kcal</span>`;
-        }else{
-          const idx = series.indexOf(p);
-          const prevP = idx>0 ? series[idx-1] : null;
-          const diff = prevP ? p.vol-prevP.vol : null;
-          const diffStr = diff===null ? '' : (diff>0?`+${diff}`:`${diff}`);
-          row.innerHTML = `<span class="d">${fmtLong(p.date)}</span><span>${p.vol}kg ${diff!==null?`<span style="color:${diff>0?'var(--arms)':diff<0?'var(--danger)':'var(--text-muted)'}">(${diffStr})</span>`:''}</span>`;
-        }
-        table.appendChild(row);
-      });
     }
-    renderChartAndTable();
+    renderChart();
 
     document.getElementById('range-slider').addEventListener('input', (e)=>{
       const preset = GRAPH_RANGE_PRESETS[parseInt(e.target.value)];
       ui.graphRangeDays = preset.days;
       displaySeries = seriesForRange(preset.days);
       document.getElementById('range-slider-label').textContent = preset.label;
-      renderChartAndTable();
+      renderChart();
     });
   }
 
@@ -2084,14 +2436,23 @@
 
     const header = document.createElement('div');
     header.className = 'graph-overview-header';
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'title-with-help';
     const title = document.createElement('h2');
     title.className = 'section-title';
     title.textContent = '部位を選択';
+    const helpBtn = document.createElement('button');
+    helpBtn.type = 'button';
+    helpBtn.className = 'help-icon-btn';
+    helpBtn.textContent = '?';
+    helpBtn.onclick = ()=> showToast('本日の目標達成状況をリアルタイムに表示します');
+    titleWrap.appendChild(title);
+    titleWrap.appendChild(helpBtn);
     const reorderBtn = document.createElement('button');
     reorderBtn.className = 'reorder-toggle' + (ui.reorderMode ? ' active' : '');
     reorderBtn.textContent = ui.reorderMode ? '完了' : '並び替え';
     reorderBtn.onclick = ()=>{ ui.reorderMode = !ui.reorderMode; render(); };
-    header.appendChild(title);
+    header.appendChild(titleWrap);
     header.appendChild(reorderBtn);
     el.appendChild(header);
 
