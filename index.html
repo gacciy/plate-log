@@ -1110,7 +1110,7 @@
     return state.exerciseOrder[key] || [];
   }
   function sessionVolume(s){
-    return s.sets.reduce((a,st)=>a+st.weight,0);
+    return s.sets.reduce((a,st)=>a+st.weight*st.reps,0);
   }
   function sessionDistance(s){
     return s.sets.reduce((a,st)=>a+(st.distance||0),0);
