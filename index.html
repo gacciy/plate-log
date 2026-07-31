@@ -612,6 +612,13 @@
     font-size:12.5px;
     color:var(--text-muted);
   }
+  .bp-history-row .bp-history-total{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--text);
+    margin-top:4px;
+  }
   .bp-history-row .bp-history-right{
     flex:0 0 auto;
     display:flex;
@@ -673,8 +680,6 @@
   .score-delta.up{color:var(--arms); background:rgba(111,191,115,0.12);}
   .score-delta.down{color:var(--danger); background:rgba(209,82,79,0.12);}
   .score-delta.flat{color:var(--text-muted); background:var(--surface-2);}
-  .score-delta.pr{color:var(--gold); background:rgba(232,178,61,0.15);}
-  .score-delta.pr .pr-amount{color:var(--text); font-weight:800;}
   .chart-wrap{margin-top:16px; height:220px;}
   .chart-legend{
     display:flex;
@@ -699,7 +704,6 @@
   .chart-legend .legend-line{
     width:12px;height:0;border-top:2px solid var(--text-muted);display:inline-block;opacity:0.6;
   }
-  .chart-legend .help-icon-btn{margin-left:auto;}
   .ma-summary{
     margin-top:14px;
     padding-top:14px;
@@ -765,25 +769,6 @@
     margin-bottom:14px;
   }
   .graph-overview-header .section-title{margin:0;}
-  .title-with-help{
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .help-icon-btn{
-    flex:0 0 auto;
-    width:18px;height:18px;
-    border-radius:50%;
-    background:var(--surface-2);
-    border:1px solid var(--border);
-    color:var(--text-muted);
-    font-size:11px;
-    font-weight:700;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:0;
-  }
   .reorder-toggle{
     background:var(--surface);
     border:1px solid var(--border);
@@ -834,6 +819,18 @@
   }
   .mini-card-name .dot{
     width:9px;height:9px;border-radius:50%;display:inline-block;flex:0 0 auto;
+  }
+  .mini-card-name .mini-card-best{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:600;
+    color:var(--text-muted);
+    white-space:nowrap;
+  }
+  .mini-card-suggestion{
+    font-size:13px;
+    font-weight:600;
+    color:var(--text-muted);
   }
   .mini-card-deltas{
     display:flex;
@@ -1076,7 +1073,8 @@
   let state = {
     sessions: [], // {id, date, bodyPart, exercise, sets:[{weight,reps}]}
     exerciseOrder: {}, // bodyPart -> [names], user-editable list & order (seeded from PRESET_EXERCISES)
-    bodyPartOrder: [] // bodyPart keys in display order for the graph overview screen
+    bodyPartOrder: [], // bodyPart keys in display order for the graph overview screen
+    graphRangeDays: 14 // last-used detail-graph slider range, persisted so it survives reloads
   };
   let ui = {
     tab: 'record',
@@ -1088,7 +1086,7 @@
     editExercises: false,
     draft: {weight:20, reps:10},
     graphBodyPart: 'chest',
-    graphRangeDays: 14, // default window for the detail-graph slider (2週間)
+    graphRangeDays: 14, // overwritten from state.graphRangeDays once loadData() resolves
     reorderMode: false,
     historyView: 'date', // 'date' | 'bodyPart'
     historyBodyPart: 'chest'
@@ -1150,6 +1148,10 @@
     }else{
       state.bodyPartOrder = allKeys;
     }
+
+    const savedRangeDays = parsed && parsed.graphRangeDays;
+    state.graphRangeDays = GRAPH_RANGE_PRESETS.some(p=>p.days===savedRangeDays) ? savedRangeDays : 14;
+    ui.graphRangeDays = state.graphRangeDays;
   }
   async function saveData(){
     try{
@@ -1879,6 +1881,9 @@
       const setsStr = cardio
         ? s.sets.map(st=>`${st.distance}km/${st.calories}kcal`).join(' / ')
         : s.sets.map(st=>`${st.weight}×${st.reps}`).join(' / ');
+      const totalStr = cardio
+        ? `計 ${round1(sessionDistance(s))}km / ${Math.round(sessionCalories(s))}kcal`
+        : `計 ${sessionVolume(s)}kg`;
 
       const row = document.createElement('div');
       row.className = 'bp-history-row';
@@ -1891,8 +1896,12 @@
       const setsDiv = document.createElement('div');
       setsDiv.className = 'bp-history-sets';
       setsDiv.textContent = setsStr;
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'bp-history-total';
+      totalDiv.textContent = totalStr;
       main.appendChild(exDiv);
       main.appendChild(setsDiv);
+      main.appendChild(totalDiv);
 
       const right = document.createElement('div');
       right.className = 'bp-history-right';
@@ -2222,17 +2231,33 @@
         kcalAtBest: kcal.atBest, kcalMargin: Math.round(kcal.best-kcal.prevBest), kcalGap: Math.round(kcal.best-kcal.current)};
     }
     const vol = trackBestProgress(series, last, 'vol');
-    return {cardio, series, empty:false, last,
+    return {cardio, series, empty:false, last, volBest: vol.best,
       volAtBest: vol.atBest, volMargin: round1(vol.best-vol.prevBest), volGap: round1(vol.best-vol.current)};
+  }
+  // suggests "weight x reps" to close a weekly-record gap: weight = the heaviest set logged across
+  // any exercise on this body part's most recent training day; reps = ceil(gap/weight), so hitting
+  // that many reps at that weight is guaranteed to close (or exceed) the gap.
+  function weightRepsSuggestion(bodyPartKey, gapFloored){
+    const sessions = state.sessions.filter(s=>s.bodyPart===bodyPartKey && s.sets.length>0);
+    if(!sessions.length) return null;
+    const lastDate = sessions.reduce((max,s)=> s.date>max ? s.date : max, sessions[0].date);
+    const maxWeight = Math.floor(Math.max(...sessions
+      .filter(s=>s.date===lastDate)
+      .flatMap(s=>s.sets.map(st=>st.weight))));
+    if(maxWeight<=0) return null;
+    const reps = Math.max(1, Math.ceil(gapFloored/maxWeight));
+    return {weight: maxWeight, reps};
   }
   function deltaBadgeHtml(diff, unit, mini){
     const cls = diff>0?'up':diff<0?'down':'flat';
     const sign = diff>0?'▲':diff<0?'▼':'―';
     return `<span class="score-delta ${cls}${mini?' mini':''}">${sign} ${Math.abs(diff)}${unit}</span>`;
   }
+  // same ▲/▼ visual language as deltaBadgeHtml: atBest -> how much the current best beats the
+  // previous one by (up/green); otherwise -> how far below the best the current total sits (down/red)
   function prBadgeHtml(atBest, margin, gap, unit){
-    if(atBest) return `<span class="score-delta pr mini">BEST <span class="pr-amount">${margin}${unit}</span>更新中</span>`;
-    return `<span class="score-delta flat mini">あと${gap}${unit}</span>`;
+    if(atBest) return `<span class="score-delta up mini">▲ ${margin}${unit}</span>`;
+    return `<span class="score-delta down mini">▼ ${gap}${unit}</span>`;
   }
 
   function renderGraphDetail(){
@@ -2285,8 +2310,6 @@
       : cardio ? {date: logicalToday(), a: overviewSummary.last.km, b: overviewSummary.last.kcal}
       : {date: logicalToday(), vol: overviewSummary.last.vol};
 
-    const graphHelpText = 'トレーニングした日ごとの記録です。点線は本日の暫定値です';
-
     if(cardio){
       let deltaKmHtml = '', deltaKcalHtml = '';
       if(prev){
@@ -2321,7 +2344,6 @@
           <span class="legend-item"><span class="dot" style="background:${b.hex}"></span>距離 (km)</span>
           <span class="legend-item"><span class="dot" style="background:${CARDIO_KCAL_HEX}"></span>カロリー (kcal)</span>
           <span class="legend-item"><span class="dot hollow"></span>本日（ライブ）</span>
-          <button type="button" class="help-icon-btn" data-act="graph-help">?</button>
         </div>
         <div class="chart-wrap" id="chart-wrap"></div>
         <div class="range-slider-wrap">
@@ -2369,7 +2391,6 @@
           <span class="legend-item"><span class="dot" style="background:${b.hex}"></span>確定</span>
           <span class="legend-item"><span class="dot hollow"></span>本日（ライブ）</span>
           <span class="legend-item"><span class="legend-line"></span>${MA_WINDOW}回移動平均</span>
-          <button type="button" class="help-icon-btn" data-act="graph-help">?</button>
         </div>
         <div class="chart-wrap" id="chart-wrap"></div>
         <div class="range-slider-wrap">
@@ -2392,8 +2413,6 @@
 
     m.innerHTML='';
     m.appendChild(el);
-
-    card.querySelector('[data-act="graph-help"]').onclick = ()=> showToast(graphHelpText);
 
     // chart (self-contained SVG, no external libraries required) — shows only the slider-selected
     // range, while the score-top/MA summary above always reflect the true, unfiltered full history
@@ -2421,6 +2440,8 @@
     document.getElementById('range-slider').addEventListener('input', (e)=>{
       const preset = GRAPH_RANGE_PRESETS[parseInt(e.target.value)];
       ui.graphRangeDays = preset.days;
+      state.graphRangeDays = preset.days;
+      saveData();
       displaySeries = seriesForRange(preset.days);
       document.getElementById('range-slider-label').textContent = preset.label;
       renderChart();
@@ -2436,23 +2457,14 @@
 
     const header = document.createElement('div');
     header.className = 'graph-overview-header';
-    const titleWrap = document.createElement('div');
-    titleWrap.className = 'title-with-help';
     const title = document.createElement('h2');
     title.className = 'section-title';
     title.textContent = '部位を選択';
-    const helpBtn = document.createElement('button');
-    helpBtn.type = 'button';
-    helpBtn.className = 'help-icon-btn';
-    helpBtn.textContent = '?';
-    helpBtn.onclick = ()=> showToast('本日の目標達成状況をリアルタイムに表示します');
-    titleWrap.appendChild(title);
-    titleWrap.appendChild(helpBtn);
     const reorderBtn = document.createElement('button');
     reorderBtn.className = 'reorder-toggle' + (ui.reorderMode ? ' active' : '');
     reorderBtn.textContent = ui.reorderMode ? '完了' : '並び替え';
     reorderBtn.onclick = ()=>{ ui.reorderMode = !ui.reorderMode; render(); };
-    header.appendChild(titleWrap);
+    header.appendChild(title);
     header.appendChild(reorderBtn);
     el.appendChild(header);
 
@@ -2492,14 +2504,30 @@
           </div>
         `;
       }else{
-        const badge = prBadgeHtml(summary.volAtBest, summary.volMargin, summary.volGap, 'kg');
+        // common display rule for this section: non-cardio kg values are truncated to a whole number
+        const bestFloored = Math.floor(summary.volBest);
+        const marginFloored = Math.floor(summary.volMargin);
+        const gapFloored = Math.floor(summary.volGap);
+        const badge = prBadgeHtml(summary.volAtBest, marginFloored, gapFloored, 'kg');
+        let bottomHtml;
+        if(summary.volAtBest){
+          bottomHtml = `<span class="mini-card-suggestion">自己ベスト更新中</span>`;
+        }else{
+          const suggestion = weightRepsSuggestion(key, gapFloored);
+          bottomHtml = suggestion
+            ? `<span class="mini-card-value">${suggestion.weight}<span class="unit">kg</span><span class="sep">×</span>${suggestion.reps}<span class="unit">回</span></span>`
+            : `<span class="mini-card-suggestion">あと${gapFloored}kg</span>`;
+        }
         main.innerHTML = `
           <div class="mini-card-top">
-            <span class="mini-card-name"><span class="dot" style="background:${b.hex}"></span>${b.label}</span>
+            <span class="mini-card-name">
+              <span class="dot" style="background:${b.hex}"></span>${b.label}
+              <span class="mini-card-best">BEST ${bestFloored}kg</span>
+            </span>
             <span class="mini-card-deltas">${badge}</span>
           </div>
           <div class="mini-card-bottom">
-            <span class="mini-card-value">${summary.last.vol}<span class="unit">kg</span></span>
+            ${bottomHtml}
             <span class="mini-sparkline" id="spark-${key}"></span>
           </div>
         `;
