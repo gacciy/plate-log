@@ -617,10 +617,15 @@
     font-size:12.5px;
     font-weight:700;
     color:var(--text);
-    margin-top:4px;
   }
   .bp-history-row .bp-history-right{
     flex:0 0 auto;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:6px;
+  }
+  .bp-history-row .bp-history-right-bottom{
     display:flex;
     align-items:center;
     gap:8px;
@@ -800,7 +805,6 @@
     gap:10px;
   }
   .mini-card.tappable{cursor:pointer;}
-  .mini-card.active{border-color:var(--gold);}
   .mini-card-main{flex:1; min-width:0;}
   .mini-card-top{
     display:flex;
@@ -814,7 +818,7 @@
     align-items:center;
     gap:8px;
     font-weight:600;
-    font-size:14px;
+    font-size:17px;
     color:var(--text);
   }
   .mini-card-name .dot{
@@ -1896,15 +1900,16 @@
       const setsDiv = document.createElement('div');
       setsDiv.className = 'bp-history-sets';
       setsDiv.textContent = setsStr;
-      const totalDiv = document.createElement('div');
-      totalDiv.className = 'bp-history-total';
-      totalDiv.textContent = totalStr;
       main.appendChild(exDiv);
       main.appendChild(setsDiv);
-      main.appendChild(totalDiv);
 
       const right = document.createElement('div');
       right.className = 'bp-history-right';
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'bp-history-total';
+      totalDiv.textContent = totalStr;
+      const bottomRow = document.createElement('div');
+      bottomRow.className = 'bp-history-right-bottom';
       const dateDiv = document.createElement('div');
       dateDiv.className = 'bp-history-date';
       dateDiv.textContent = fmtLong(s.date);
@@ -1920,8 +1925,10 @@
         });
         render();
       };
-      right.appendChild(dateDiv);
-      right.appendChild(del);
+      bottomRow.appendChild(dateDiv);
+      bottomRow.appendChild(del);
+      right.appendChild(totalDiv);
+      right.appendChild(bottomRow);
 
       row.appendChild(main);
       row.appendChild(right);
@@ -2477,8 +2484,7 @@
       const summary = bodyPartSummaryOverview(key);
 
       const card = document.createElement('div');
-      const isActive = !ui.reorderMode && ui.bodyPart===key;
-      card.className = 'mini-card' + (!ui.reorderMode ? ' tappable' : '') + (isActive ? ' active' : '');
+      card.className = 'mini-card' + (!ui.reorderMode ? ' tappable' : '');
 
       const main = document.createElement('div');
       main.className = 'mini-card-main';
