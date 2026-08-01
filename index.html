@@ -602,10 +602,22 @@
   }
   .bp-history-row .bp-history-main{flex:1; min-width:0;}
   .bp-history-row .bp-history-ex{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:8px;
     font-size:14px;
     font-weight:600;
     color:var(--text);
     margin-bottom:4px;
+  }
+  .bp-history-row .bp-history-rm{
+    flex:0 0 auto;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--gold);
+    white-space:nowrap;
   }
   .bp-history-row .bp-history-sets{
     font-family:'JetBrains Mono',monospace;
@@ -1210,10 +1222,10 @@
       main.textContent = `${exercise} ${weight}kg×${reps}回`;
       body.appendChild(head);
       body.appendChild(main);
-      if(prInfo.weightPR){
+      if(prInfo.volumePR){
         const p = document.createElement('div');
         p.className = 'toast-pr-sub';
-        p.textContent = `自己ベスト ${prInfo.weightPR.prev}kg → ${prInfo.weightPR.now}kg`;
+        p.textContent = `自己ベスト ${prInfo.volumePR.prev}kg → ${prInfo.volumePR.now}kg`;
         body.appendChild(p);
       }
       if(prInfo.rmPR){
@@ -1296,14 +1308,16 @@
       if(s.date<=date) priorSets.push(...s.sets);
     });
     if(!priorSets.length) return null;
-    const maxWeight = Math.max(...priorSets.map(st=>st.weight));
+    // "自己ベスト" tracks a single set's total volume (weight x reps), not raw weight alone —
+    // a heavier weight for far fewer reps isn't actually a bigger set.
+    const maxVolume = Math.max(...priorSets.map(st=>st.weight*st.reps));
     const max1RM = Math.max(...priorSets.map(st=>estimated1RM(st.weight, st.reps)));
-    const newWeight = newSet.weight;
+    const newVolume = newSet.weight*newSet.reps;
     const new1RM = estimated1RM(newSet.weight, newSet.reps);
     const result = {};
-    if(newWeight>maxWeight) result.weightPR = {prev: maxWeight, now: newWeight};
+    if(newVolume>maxVolume) result.volumePR = {prev: round1(maxVolume), now: round1(newVolume)};
     if(new1RM>max1RM) result.rmPR = {prev: round1(max1RM), now: round1(new1RM)};
-    if(!result.weightPR && !result.rmPR) return null;
+    if(!result.volumePR && !result.rmPR) return null;
     return result;
   }
 
@@ -1878,6 +1892,13 @@
       const exDiv = document.createElement('div');
       exDiv.className = 'bp-history-ex';
       exDiv.textContent = s.exercise;
+      if(!cardio){
+        const rm = round1(Math.max(...s.sets.map(st=>estimated1RM(st.weight, st.reps))));
+        const rmSpan = document.createElement('span');
+        rmSpan.className = 'bp-history-rm';
+        rmSpan.textContent = `1RM ${rm}kg`;
+        exDiv.appendChild(rmSpan);
+      }
       const setsDiv = document.createElement('div');
       setsDiv.className = 'bp-history-sets';
       setsDiv.textContent = setsStr;
