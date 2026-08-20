@@ -2195,13 +2195,20 @@
     return {rising: lastN.filter(d=>d>0).length, compared: lastN.length};
   }
 
-  // shared "直近7日間合計・前回比" data lookup, used by both the overview mini-cards and the detail score card
+  // shared "直近7日間合計・7日前比" data lookup, used by the detail score card. `series` stays
+  // session-dates-only (for the chart's dots), but `prev` is looked up from the daily-filled series
+  // at exactly 7 days before `last.date` — a true non-overlapping week-over-week comparison, rather
+  // than a diff against whichever earlier date this body part happened to be trained on next. That
+  // prior approach could span wildly uneven gaps and, for infrequently-trained parts, would often
+  // just reduce to "how much did the most recent session add," which reads as a comparison but isn't one.
   function bodyPartSummary(bodyPart){
     const cardio = isCardio(bodyPart);
     const series = cardio ? rollingSeriesDual(bodyPart) : rollingSeries(bodyPart);
     if(!series.length) return {cardio, series, empty:true};
     const last = series[series.length-1];
-    const prev = series.length>1 ? series[series.length-2] : null;
+    const dailyAll = cardio ? rollingSeriesDualDailyAll(bodyPart) : rollingSeriesDailyAll(bodyPart);
+    const prevDate = addDays(last.date, -7);
+    const prev = dailyAll.find(p=>p.date===prevDate) || null;
     return {cardio, series, empty:false, last, prev};
   }
   // Tracks the running all-time-best of a daily-filled series and the "previous" best that stood
