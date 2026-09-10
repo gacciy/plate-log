@@ -1728,8 +1728,11 @@
         rMinus.onclick = ()=>{ const i=document.getElementById('reps-input'); i.value = Math.max(0, (parseFloat(i.value)||0)-50); };
         rPlus.onclick = ()=>{ const i=document.getElementById('reps-input'); i.value = (parseFloat(i.value)||0)+50; };
       }else{
-        wMinus.onclick = ()=>{ const i=document.getElementById('weight-input'); i.value = Math.max(0, (parseFloat(i.value)||0)-2.5); };
-        wPlus.onclick = ()=>{ const i=document.getElementById('weight-input'); i.value = (parseFloat(i.value)||0)+2.5; };
+        // shoulders/arms use lighter, finer-grained loading (e.g. dumbbells/cables) than the other
+        // body parts, so their weight stepper moves by 1kg instead of the usual 2.5kg plate jump.
+        const weightStep = (ui.bodyPart==='shoulders' || ui.bodyPart==='arms') ? 1 : 2.5;
+        wMinus.onclick = ()=>{ const i=document.getElementById('weight-input'); i.value = Math.max(0, (parseFloat(i.value)||0)-weightStep); };
+        wPlus.onclick = ()=>{ const i=document.getElementById('weight-input'); i.value = (parseFloat(i.value)||0)+weightStep; };
         rMinus.onclick = ()=>{ const i=document.getElementById('reps-input'); i.value = Math.max(0, (parseInt(i.value)||0)-1); };
         rPlus.onclick = ()=>{ const i=document.getElementById('reps-input'); i.value = (parseInt(i.value)||0)+1; };
       }
