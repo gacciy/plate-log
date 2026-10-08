@@ -1723,10 +1723,10 @@
     const rPlus = m.querySelector('[data-act="r-plus"]');
     if(wMinus){
       if(isCardio(ui.bodyPart)){
-        wMinus.onclick = ()=>{ const i=document.getElementById('weight-input'); i.value = Math.max(0, round1((parseFloat(i.value)||0)-0.5)); };
-        wPlus.onclick = ()=>{ const i=document.getElementById('weight-input'); i.value = round1((parseFloat(i.value)||0)+0.5); };
-        rMinus.onclick = ()=>{ const i=document.getElementById('reps-input'); i.value = Math.max(0, (parseFloat(i.value)||0)-50); };
-        rPlus.onclick = ()=>{ const i=document.getElementById('reps-input'); i.value = (parseFloat(i.value)||0)+50; };
+        wMinus.onclick = ()=>{ const i=document.getElementById('weight-input'); i.value = Math.max(0, round1((parseFloat(i.value)||0)-0.1)); };
+        wPlus.onclick = ()=>{ const i=document.getElementById('weight-input'); i.value = round1((parseFloat(i.value)||0)+0.1); };
+        rMinus.onclick = ()=>{ const i=document.getElementById('reps-input'); i.value = Math.max(0, (parseFloat(i.value)||0)-10); };
+        rPlus.onclick = ()=>{ const i=document.getElementById('reps-input'); i.value = (parseFloat(i.value)||0)+10; };
       }else{
         // shoulders/arms use lighter, finer-grained loading (e.g. dumbbells/cables) than the other
         // body parts, so their weight stepper moves by 1kg instead of the usual 2.5kg plate jump.
